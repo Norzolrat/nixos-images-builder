@@ -1,11 +1,11 @@
-.PHONY: build-base build-kube upload-base upload-kube prepare-template help
+.PHONY: build-base build-k8s upload-base upload-k8s prepare-template help
 
 PROXMOX_HOST  ?= pve
 PROXMOX_USER  ?= root@pam
 PROXMOX_STORE ?= local
 TEMPLATE_IP   ?=
 TEMPLATE_USER ?= user
-SSH_KEY       ?= ~/.ssh/id_rsa
+SSH_KEY       ?= ~/.ssh/id_ed25519_terraform
 
 EXPORT_DIR = ./export
 
@@ -21,18 +21,18 @@ build-base: $(EXPORT_DIR)
 	cp -f $$(find -L result-base -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-base.qcow2
 
 build-kube: $(EXPORT_DIR)
-	nix build ./nix#nixos-kube --out-link result-kube
-	cp -f $$(find -L result-kube -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-kube.qcow2
+	nix build ./nix#nixos-k8s --out-link result-k8s
+	cp -f $$(find -L result-k8s -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-k8s.qcow2
 
 # ============================================================
 # Upload vers Proxmox
 # ============================================================
 
 upload-base: build-base
-	scp $(EXPORT_DIR)/nixos-base.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/images/
+	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-base.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-base.qcow2
 
 upload-kube: build-kube
-	scp $(EXPORT_DIR)/nixos-kube.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/images/
+	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-k8s.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-k8s.qcow2
 
 # ============================================================
 # Préparer le template : nettoyer l'état cloud-init
@@ -62,9 +62,9 @@ endif
 help:
 	@echo "Targets disponibles:"
 	@echo "  build-base            Construire l'image NixOS de base"
-	@echo "  build-kube             Construire l'image NixOS + Kubernetes"
+	@echo "  build-k8s             Construire l'image NixOS + k8srnetes"
 	@echo "  upload-base           Build + upload vers Proxmox"
-	@echo "  upload-kube            Build + upload vers Proxmox (kube)"
+	@echo "  upload-k8s            Build + upload vers Proxmox (k8s)"
 	@echo "  prepare-template      Nettoyer cloud-init avant création du template"
 	@echo "                        Requiert: TEMPLATE_IP=<ip>"
 	@echo ""

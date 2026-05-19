@@ -1,0 +1,5 @@
+# Images exportées
+export/
+
+# Liens symboliques résultats de nix build
+result-*
