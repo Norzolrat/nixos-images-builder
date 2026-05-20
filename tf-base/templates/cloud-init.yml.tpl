@@ -9,6 +9,10 @@ write_files:
     content: "${vm_hostname}\n"
     permissions: '0644'
 
+runcmd:
+  - hostname $(cat /var/lib/cloud-hostname)
+  - hostnamectl set-hostname $(cat /var/lib/cloud-hostname)
+
 final_message: |
   =====================================================
   NixOS base VM ready — boot took $UPTIME seconds
