@@ -1,14 +1,22 @@
-terraform {
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.7"
-    }
+# ========================================
+# Nettoyage known_hosts local
+# ========================================
+
+resource "null_resource" "ssh_known_hosts" {
+  triggers = {
+    vm_id = var.vm_id
+    vm_ip = split("/", var.vm_ip)[0]
   }
+
+  provisioner "local-exec" {
+    command = "ssh-keygen -R ${split("/", var.vm_ip)[0]} || true"
+  }
+
+  depends_on = [proxmox_virtual_environment_vm.amd_gpu]
 }
 
 # ========================================
-# Upload du cloud-init custom sur Proxmox
+# Snippet cloud-init
 # ========================================
 
 resource "proxmox_virtual_environment_file" "cloud_init_config" {
@@ -17,26 +25,26 @@ resource "proxmox_virtual_environment_file" "cloud_init_config" {
   node_name    = var.proxmox_node
 
   source_raw {
-    data = templatefile("${path.module}/templates/cloud-init-worker.yml.tpl", {
-      vm_hostname = var.vm_hostname
-      timezone    = var.timezone
-      master_ip   = var.master_ip
+    data = templatefile("${path.module}/templates/cloud-init.yml.tpl", {
+      vm_hostname  = var.vm_hostname
+      timezone     = var.timezone
+      manager_user = var.manager_user
     })
-    file_name = "cloud-init-kubeadm-${var.vm_hostname}.yml"
+    file_name = "cloud-init-amd-gpu-${var.vm_hostname}.yml"
   }
 }
 
 # ========================================
-# VM kubeadm Worker — clone du template NixOS
+# VM NixOS AMD GPU
 # ========================================
 
-resource "proxmox_virtual_environment_vm" "worker" {
+resource "proxmox_virtual_environment_vm" "amd_gpu" {
   name      = var.vm_hostname
   node_name = var.proxmox_node
   vm_id     = var.vm_id
   tags      = var.vm_tags
 
-  description = "kubeadm Worker - NixOS"
+  description = "NixOS VM — AMD GPU ROCm (Navi 48 / gfx1201)"
 
   on_boot = true
   started = true
@@ -74,19 +82,23 @@ resource "proxmox_virtual_environment_vm" "worker" {
     type              = "4m"
   }
 
+  # Passthrough PCIe — carte AMD via resource mapping Proxmox
+  # Prérequis : créer le mapping dans Proxmox AVANT d'appliquer
+  #   Datacenter → Resource Mappings → PCI Devices → Add
+  #   Name: "amd-gpu"  |  Node: pve  |  PCI ID: 0000:c0:00
+  # Puis donner la permission à terraform@pve :
+  #   Datacenter → Permissions → Add → User=terraform@pve, Path=/mapping/pci/amd-gpu, Role=PVEMappingUser
+  hostpci {
+    device  = "hostpci0"
+    mapping = var.gpu_pci_mapping
+    pcie    = true   # PCIe natif (recommandé pour RDNA)
+    rombar  = true
+    xvga    = false  # headless : pas de sortie vidéo primaire
+  }
+
   network_device {
     bridge = var.network_bridge
     model  = "virtio"
-  }
-
-  # Seconde carte réseau — désactivée par défaut, à configurer manuellement sur le worker
-  dynamic "network_device" {
-    for_each = var.extra_nic_enabled ? [1] : []
-    content {
-      bridge  = var.extra_nic_bridge
-      model   = "virtio"
-      enabled = false
-    }
   }
 
   serial_device {}

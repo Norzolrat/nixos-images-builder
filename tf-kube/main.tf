@@ -115,5 +115,8 @@ module "worker" {
 
   timezone = var.timezone
 
+  extra_nic_enabled = var.worker_extra_nic_enabled
+  extra_nic_bridge  = var.worker_extra_nic_bridge
+
   depends_on = [module.master]
 }

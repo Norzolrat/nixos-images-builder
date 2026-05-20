@@ -1,4 +1,4 @@
-.PHONY: build-base build-k8s upload-base upload-k8s prepare-template help
+.PHONY: build-base build-k8s build-gpu-amd upload-base upload-k8s upload-gpu-amd prepare-template help
 
 PROXMOX_HOST  ?= pve
 PROXMOX_USER  ?= root@pam
@@ -24,6 +24,10 @@ build-kube: $(EXPORT_DIR)
 	nix build ./nix#nixos-k8s --out-link result-k8s
 	cp -f $$(find -L result-k8s -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-k8s.qcow2
 
+build-gpu-amd: $(EXPORT_DIR)
+	nix build ./nix#nixos-gpu-amd --out-link result-gpu-amd
+	cp -f $$(find -L result-gpu-amd -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-gpu-amd.qcow2
+
 # ============================================================
 # Upload vers Proxmox
 # ============================================================
@@ -33,6 +37,9 @@ upload-base: build-base
 
 upload-kube: build-kube
 	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-k8s.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-k8s.qcow2
+
+upload-gpu-amd: build-gpu-amd
+	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-gpu-amd.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-gpu-amd.qcow2
 
 # ============================================================
 # Préparer le template : nettoyer l'état cloud-init
@@ -62,9 +69,11 @@ endif
 help:
 	@echo "Targets disponibles:"
 	@echo "  build-base            Construire l'image NixOS de base"
-	@echo "  build-k8s             Construire l'image NixOS + k8srnetes"
+	@echo "  build-k8s             Construire l'image NixOS + Kubernetes"
+	@echo "  build-gpu-amd         Construire l'image NixOS + AMD GPU (ROCm / Docker)"
 	@echo "  upload-base           Build + upload vers Proxmox"
 	@echo "  upload-k8s            Build + upload vers Proxmox (k8s)"
+	@echo "  upload-gpu-amd        Build + upload vers Proxmox (AMD GPU)"
 	@echo "  prepare-template      Nettoyer cloud-init avant création du template"
 	@echo "                        Requiert: TEMPLATE_IP=<ip>"
 	@echo ""

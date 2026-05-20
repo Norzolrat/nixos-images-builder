@@ -39,18 +39,21 @@
         partitionTableType = "efi";
       };
 
-    modules-base = [ ./configuration.nix ];
-    modules-k8s  = [ ./configuration.nix ./k8s.nix ];
+    modules-base    = [ ./configuration.nix ];
+    modules-k8s     = [ ./configuration.nix ./k8s.nix ];
+    modules-gpu-amd = [ ./configuration.nix ./gpu-amd.nix ];
   in {
     # nixosConfigurations : sans diskImageModule (pour nixos-rebuild, etc.)
     nixosConfigurations = {
-      nixos-base = nixpkgs.lib.nixosSystem { inherit system; modules = modules-base; };
-      nixos-k8s  = nixpkgs.lib.nixosSystem { inherit system; modules = modules-k8s; };
+      nixos-base    = nixpkgs.lib.nixosSystem { inherit system; modules = modules-base; };
+      nixos-k8s     = nixpkgs.lib.nixosSystem { inherit system; modules = modules-k8s; };
+      nixos-gpu-amd = nixpkgs.lib.nixosSystem { inherit system; modules = modules-gpu-amd; };
     };
 
     packages.${system} = {
-      nixos-base = makeQcow2 modules-base;
-      nixos-k8s  = makeQcow2 modules-k8s;
+      nixos-base    = makeQcow2 modules-base;
+      nixos-k8s     = makeQcow2 modules-k8s;
+      nixos-gpu-amd = makeQcow2 modules-gpu-amd;
     };
   };
 }

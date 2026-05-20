@@ -45,11 +45,11 @@ variable "proxmox_datastore_snippets" {
 }
 
 # ========================================
-# Configuration SSH Proxmox (pour upload)
+# Configuration SSH Proxmox
 # ========================================
 
 variable "proxmox_ssh_user" {
-  description = "Utilisateur SSH sur le nœud Proxmox (requis par le provider pour l'upload de fichiers)"
+  description = "Utilisateur SSH sur le nœud Proxmox"
   type        = string
   default     = "root"
 }
@@ -66,39 +66,55 @@ variable "proxmox_ssh_private_key_path" {
 # ========================================
 
 variable "vm_hostname" {
-  description = "Préfixe du nom d'hôte (master = <hostname>-master, worker = <hostname>-worker-N)"
+  description = "Nom d'hôte de la VM"
   type        = string
-  default     = "nixos-kube"
+  default     = "nixos-amd-gpu"
 }
 
 variable "vm_id" {
-  description = "ID de base de la VM master (workers = vm_id + N)"
+  description = "ID de la VM dans Proxmox"
   type        = number
-  default     = 9001
+  default     = 8999
 }
 
 variable "nixos_image_file_id" {
-  description = "ID Proxmox du qcow2 pré-uploadé (format: local:iso/nixos-kube.qcow2)"
+  description = "ID Proxmox du qcow2 nixos-gpu-amd pré-uploadé"
   type        = string
-  default     = "local:iso/nixos-kube.qcow2"
+  default     = "nixos-import:0/nixos-gpu-amd.qcow2"
 }
 
 variable "vm_memory" {
-  description = "RAM allouée à la VM en MB"
+  description = "RAM allouée en MB"
   type        = number
-  default     = 2048
+  default     = 8192
 }
 
 variable "vm_cores" {
   description = "Nombre de cœurs CPU"
   type        = number
-  default     = 2
+  default     = 4
 }
 
 variable "vm_disk_size" {
   description = "Taille du disque en GB"
   type        = number
-  default     = 50
+  default     = 40
+}
+
+variable "vm_tags" {
+  description = "Tags Proxmox"
+  type        = list(string)
+  default     = ["nixos", "gpu", "amd"]
+}
+
+# ========================================
+# Configuration GPU passthrough
+# ========================================
+
+variable "gpu_pci_mapping" {
+  description = "Nom du resource mapping PCI déclaré dans Proxmox (Datacenter → Resource Mappings → PCI Devices)"
+  type        = string
+  default     = "amd-gpu"
 }
 
 # ========================================
@@ -112,9 +128,9 @@ variable "network_bridge" {
 }
 
 variable "vm_ip" {
-  description = "Adresse IP du master (format CIDR). Workers = IP+N"
+  description = "Adresse IP de la VM (format CIDR)"
   type        = string
-  default     = "192.168.99.186/24"
+  default     = "192.168.99.210/24"
 }
 
 variable "vm_gateway" {
@@ -129,49 +145,21 @@ variable "vm_nameserver" {
   default     = "1.1.1.1"
 }
 
-variable "vm_tags" {
-  description = "Tags à appliquer aux VMs"
-  type        = list(string)
-  default     = ["nixos", "kubeadm"]
-}
-
-# ========================================
-# Configuration kubeadm
-# ========================================
-
-variable "pod_network_cidr" {
-  description = "Range réseau pour les pods (kubeadm --pod-network-cidr)"
-  type        = string
-  default     = "10.244.0.0/16"
-}
-
-variable "calico_version" {
-  description = "Version de Calico CNI à installer"
-  type        = string
-  default     = "3.29.3"
-}
-
 # ========================================
 # Configuration Utilisateur & SSH
 # ========================================
 
 variable "manager_user" {
-  description = "Utilisateur cloud-init créé par Proxmox (--ciuser)"
+  description = "Utilisateur cloud-init"
   type        = string
   default     = "user"
 }
 
 variable "manager_ssh_public_key" {
-  description = "Clé publique SSH pour l'utilisateur"
+  description = "Clé publique SSH"
   type        = string
   sensitive   = true
   default     = "###SSH_KEY###"
-}
-
-variable "ssh_private_key_path" {
-  description = "Chemin vers la clé privée SSH pour le provisioning Terraform"
-  type        = string
-  default     = "~/.ssh/id_rsa"
 }
 
 # ========================================
@@ -182,26 +170,4 @@ variable "timezone" {
   description = "Timezone du système"
   type        = string
   default     = "Europe/Paris"
-}
-
-# ========================================
-# Configuration Workers
-# ========================================
-
-variable "worker_count" {
-  description = "Nombre de workers kubeadm à déployer"
-  type        = number
-  default     = 2
-}
-
-variable "worker_extra_nic_enabled" {
-  description = "Activer une seconde carte réseau sur les workers (désactivée par défaut, à configurer manuellement)"
-  type        = bool
-  default     = false
-}
-
-variable "worker_extra_nic_bridge" {
-  description = "Bridge Proxmox utilisé pour la seconde carte réseau des workers"
-  type        = string
-  default     = "vmbr1"
 }

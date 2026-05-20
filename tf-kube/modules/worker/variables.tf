@@ -115,3 +115,19 @@ variable "timezone" {
   type    = string
   default = "Europe/Paris"
 }
+
+# ========================================
+# Seconde carte réseau (optionnelle)
+# ========================================
+
+variable "extra_nic_enabled" {
+  description = "Activer une seconde carte réseau (désactivée par défaut, à configurer manuellement)"
+  type        = bool
+  default     = false
+}
+
+variable "extra_nic_bridge" {
+  description = "Bridge Proxmox pour la seconde carte réseau"
+  type        = string
+  default     = "vmbr1"
+}
