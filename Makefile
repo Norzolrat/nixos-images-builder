@@ -1,4 +1,4 @@
-.PHONY: build-base build-k8s build-gpu-amd upload-base upload-k8s upload-gpu-amd prepare-template help
+.PHONY: build-base build-k8s build-gpu-amd build-k8s-gpu-amd upload-base upload-k8s upload-gpu-amd upload-k8s-gpu-amd prepare-template help
 
 PROXMOX_HOST  ?= pve
 PROXMOX_USER  ?= root@pam
@@ -28,6 +28,10 @@ build-gpu-amd: $(EXPORT_DIR)
 	nix build ./nix#nixos-gpu-amd --out-link result-gpu-amd
 	cp -f $$(find -L result-gpu-amd -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-gpu-amd.qcow2
 
+build-k8s-gpu-amd: $(EXPORT_DIR)
+	nix build ./nix#nixos-k8s-gpu-amd --out-link result-k8s-gpu-amd
+	cp -f $$(find -L result-k8s-gpu-amd -name "*.qcow2" | head -1) $(EXPORT_DIR)/nixos-k8s-gpu-amd.qcow2
+
 # ============================================================
 # Upload vers Proxmox
 # ============================================================
@@ -40,6 +44,9 @@ upload-kube: build-kube
 
 upload-gpu-amd: build-gpu-amd
 	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-gpu-amd.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-gpu-amd.qcow2
+
+upload-k8s-gpu-amd: build-k8s-gpu-amd
+	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-k8s-gpu-amd.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-k8s-gpu-amd.qcow2
 
 # ============================================================
 # Préparer le template : nettoyer l'état cloud-init
@@ -71,9 +78,11 @@ help:
 	@echo "  build-base            Construire l'image NixOS de base"
 	@echo "  build-k8s             Construire l'image NixOS + Kubernetes"
 	@echo "  build-gpu-amd         Construire l'image NixOS + AMD GPU (ROCm / Docker)"
+	@echo "  build-k8s-gpu-amd     Construire l'image NixOS + Kubernetes + AMD GPU"
 	@echo "  upload-base           Build + upload vers Proxmox"
 	@echo "  upload-k8s            Build + upload vers Proxmox (k8s)"
 	@echo "  upload-gpu-amd        Build + upload vers Proxmox (AMD GPU)"
+	@echo "  upload-k8s-gpu-amd    Build + upload vers Proxmox (k8s + AMD GPU)"
 	@echo "  prepare-template      Nettoyer cloud-init avant création du template"
 	@echo "                        Requiert: TEMPLATE_IP=<ip>"
 	@echo ""
