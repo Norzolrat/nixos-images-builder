@@ -74,7 +74,7 @@ variable "vm_hostname" {
 variable "vm_id" {
   description = "ID de base de la VM master (workers = vm_id + N)"
   type        = number
-  default     = 9001
+  default     = 10001
 }
 
 variable "nixos_image_file_id" {
@@ -204,4 +204,44 @@ variable "worker_extra_nic_bridge" {
   description = "Bridge Proxmox utilisé pour la seconde carte réseau des workers"
   type        = string
   default     = "vmbr1"
+}
+
+# ========================================
+# Configuration Workers GPU AMD
+# ========================================
+
+variable "gpu_worker_count" {
+  description = "Nombre de workers GPU à déployer (numérotés à la suite des workers normaux)"
+  type        = number
+  default     = 0
+}
+
+variable "gpu_worker_nixos_image_file_id" {
+  description = "ID Proxmox du qcow2 nixos-k8s-gpu-amd uploadé"
+  type        = string
+  default     = "nixos-import:0/nixos-k8s-gpu-amd.qcow2"
+}
+
+variable "gpu_worker_memory" {
+  description = "RAM allouée aux workers GPU en MB"
+  type        = number
+  default     = 8192
+}
+
+variable "gpu_worker_cores" {
+  description = "Nombre de cœurs CPU pour les workers GPU"
+  type        = number
+  default     = 4
+}
+
+variable "gpu_worker_disk_size" {
+  description = "Taille du disque des workers GPU en GB"
+  type        = number
+  default     = 40
+}
+
+variable "gpu_pci_mapping" {
+  description = "Nom du resource mapping PCI AMD déclaré dans Proxmox (Datacenter → Resource Mappings → PCI Devices)"
+  type        = string
+  default     = "amd-gpu"
 }
