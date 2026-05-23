@@ -55,18 +55,9 @@ write_files:
       # ---- Attendre que Calico soit ready ----
       kubectl rollout status daemonset/calico-node -n kube-system --timeout=10m
 
-      # ---- Générer le join-command et le servir aux workers ----
+      # ---- Générer le join-command (récupéré par Terraform via SCP) ----
       kubeadm token create --print-join-command > /root/kubeadm-join.sh
       chmod 644 /root/kubeadm-join.sh
-
-      # ---- Exposer admin.conf (kubeconfig) pour récupération distante ----
-      cp /etc/kubernetes/admin.conf /root/admin.conf
-      chmod 644 /root/admin.conf
-
-      iptables -I INPUT -p tcp --dport 9999 -j ACCEPT
-      busybox httpd -f -p 9999 -h /root &
-      SERVE_PID=$!
-      (sleep 3600; kill $SERVE_PID 2>/dev/null; iptables -D INPUT -p tcp --dport 9999 -j ACCEPT) &
 
 runcmd:
   - /root/k8s-bootstrap.sh 2>&1 | tee /root/k8s-bootstrap.log

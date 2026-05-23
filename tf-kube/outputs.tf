@@ -64,6 +64,19 @@ output "cluster_info" {
         split("/", var.vm_ip)[1]
       )])}
 
+    GPU Worker Nodes AMD (${var.gpu_worker_count}):
+      ${var.gpu_worker_count == 0 ? "(aucun)" : join("\n      ", [for i in range(var.gpu_worker_count) : format(
+        "- %s-worker-%d: %s.%s.%s.%d/%s  [GPU: %s]",
+        var.vm_hostname,
+        var.worker_count + i + 1,
+        split(".", split("/", var.vm_ip)[0])[0],
+        split(".", split("/", var.vm_ip)[0])[1],
+        split(".", split("/", var.vm_ip)[0])[2],
+        tonumber(split(".", split("/", var.vm_ip)[0])[3]) + var.worker_count + i + 1,
+        split("/", var.vm_ip)[1],
+        var.gpu_pci_mapping
+      )])}
+
     Récupérer le kubeconfig :
       scp ${var.manager_user}@${split("/", var.vm_ip)[0]}:~/kubeconfig ~/.kube/config
       kubectl get nodes
@@ -73,4 +86,23 @@ output "cluster_info" {
 
   EOT
   description = "Informations de connexion au cluster"
+}
+
+# ========================================
+# Outputs - GPU Workers AMD
+# ========================================
+
+output "gpu_workers_count" {
+  value       = var.gpu_worker_count
+  description = "Nombre de workers GPU AMD déployés"
+}
+
+output "gpu_workers_vm_ids" {
+  value       = [for w in module.worker_gpu_amd : w.vm_id]
+  description = "IDs des VMs workers GPU AMD"
+}
+
+output "gpu_workers_vm_ips" {
+  value       = [for w in module.worker_gpu_amd : w.vm_ip]
+  description = "IPs des VMs workers GPU AMD"
 }
