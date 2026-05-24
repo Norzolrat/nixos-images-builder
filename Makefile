@@ -1,4 +1,4 @@
-.PHONY: build-base build-k8s build-gpu-amd build-k8s-gpu-amd upload-base upload-k8s upload-gpu-amd upload-k8s-gpu-amd prepare-template help
+.PHONY: build-base build-k8s build-gpu-amd build-k8s-gpu-amd upload-base upload-k8s upload-gpu-amd upload-k8s-gpu-amd prepare-template deploy-init deploy-plan deploy deploy-destroy help
 
 PROXMOX_HOST  ?= pve
 PROXMOX_USER  ?= root@pam
@@ -49,6 +49,36 @@ upload-k8s-gpu-amd: build-k8s-gpu-amd
 	scp -i $(SSH_KEY) $(EXPORT_DIR)/nixos-k8s-gpu-amd.qcow2 $(PROXMOX_USER)@$(PROXMOX_HOST):/var/lib/vz/import/images/0/nixos-k8s-gpu-amd.qcow2
 
 # ============================================================
+# Déploiement Kubernetes (tf-deploy)
+# ============================================================
+# Prérequis : ../export/kubeconfig doit exister (généré par tf-kube)
+#
+# Usage :
+#   make deploy              # init + apply
+#   make deploy NODE_IP=192.168.99.186
+#   make deploy-destroy      # détruire les ressources k8s
+
+NODE_IP              ?=
+CLOUDFLARE_TOKEN     ?=
+
+deploy-init:
+	cd tf-deploy && terraform init
+
+deploy-plan:
+	cd tf-deploy && terraform plan \
+		$(if $(NODE_IP),-var="node_ip=$(NODE_IP)",) \
+		$(if $(CLOUDFLARE_TOKEN),-var="cloudflare_tunnel_token=$(CLOUDFLARE_TOKEN)",)
+
+deploy: deploy-init
+	cd tf-deploy && terraform apply -auto-approve \
+		$(if $(NODE_IP),-var="node_ip=$(NODE_IP)",) \
+		$(if $(CLOUDFLARE_TOKEN),-var="cloudflare_tunnel_token=$(CLOUDFLARE_TOKEN)",)
+
+deploy-destroy:
+	cd tf-deploy && terraform destroy -auto-approve \
+		$(if $(CLOUDFLARE_TOKEN),-var="cloudflare_tunnel_token=$(CLOUDFLARE_TOKEN)",)
+
+# ============================================================
 # Préparer le template : nettoyer l'état cloud-init
 # ============================================================
 # Usage : make prepare-template TEMPLATE_IP=192.168.99.X
@@ -85,6 +115,9 @@ help:
 	@echo "  upload-k8s-gpu-amd    Build + upload vers Proxmox (k8s + AMD GPU)"
 	@echo "  prepare-template      Nettoyer cloud-init avant création du template"
 	@echo "                        Requiert: TEMPLATE_IP=<ip>"
+	@echo "  deploy                Init + apply tf-deploy (nginx hello-world)"
+	@echo "  deploy-plan           Plan tf-deploy sans appliquer"
+	@echo "  deploy-destroy        Détruire les ressources k8s hello-world"
 	@echo ""
 	@echo "Variables:"
 	@echo "  PROXMOX_HOST   Hôte Proxmox        (défaut: pve)"
@@ -92,3 +125,4 @@ help:
 	@echo "  TEMPLATE_IP    IP de la VM template  (requis pour prepare-template)"
 	@echo "  TEMPLATE_USER  User SSH template     (défaut: user)"
 	@echo "  EXPORT_DIR     Répertoire de sortie  (défaut: ./export)"
+	@echo "  NODE_IP        IP d'un nœud k8s      (optionnel, pour les URLs dans output)"

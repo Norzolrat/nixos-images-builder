@@ -3,3 +3,12 @@ export/
 
 # Liens symboliques résultats de nix build
 result-*
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars
+**/*.auto.tfvars
+**/crash.log
