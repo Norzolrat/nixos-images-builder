@@ -53,6 +53,32 @@ variable "node_ip" {
 }
 
 # ========================================
+# GPU Test — AMD ROCm
+# ========================================
+
+variable "gpu_node_label_key" {
+  description = "Clé du label Kubernetes qui identifie le node GPU AMD"
+  type        = string
+  default     = "gpu"
+}
+
+variable "gpu_node_label_value" {
+  description = "Valeur du label Kubernetes qui identifie le node GPU AMD"
+  type        = string
+  default     = "amd"
+}
+
+variable "pytorch_rocm_image" {
+  description = <<-EOD
+    Image Docker pour le test GPU AMD.
+    - rocm/rocm-terminal:latest  → ~2 GB  (ROCm tools + Python, sans PyTorch) ✅ défaut
+    - rocm/pytorch:latest        → ~15 GB (PyTorch complet, nécessite >10 GB libres)
+  EOD
+  type    = string
+  default = "rocm/rocm-terminal:latest"
+}
+
+# ========================================
 # Cloudflare Tunnel
 # ========================================
 
