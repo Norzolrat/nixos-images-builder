@@ -305,7 +305,7 @@ module "worker_gpu_amd" {
 
   timezone = var.timezone
 
-  depends_on = [module.master]
+  depends_on = [module.master, module.worker]
 }
 
 # ========================================
@@ -353,4 +353,43 @@ resource "null_resource" "join_gpu_workers" {
     null_resource.fetch_join_command,
     null_resource.ssh_known_hosts_workers_gpu,
   ]
+}
+
+# ========================================
+# Label gpu=amd sur les workers GPU
+# Appliqué automatiquement après le join
+# ========================================
+
+resource "null_resource" "label_gpu_workers" {
+  count = var.gpu_worker_count
+
+  triggers = {
+    worker_ip = local.gpu_worker_ips[count.index]
+    node_name = "${var.vm_hostname}-worker-${var.worker_count + count.index + 1}"
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      NODE="${var.vm_hostname}-worker-${var.worker_count + count.index + 1}"
+      echo "Attente que $NODE soit Ready..."
+      for i in $(seq 1 30); do
+        STATUS=$(kubectl --kubeconfig ../export/kubeconfig get node "$NODE" \
+                   -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)
+        if [ "$STATUS" = "True" ]; then
+          echo "$NODE est Ready — pose du label gpu=amd"
+          kubectl --kubeconfig ../export/kubeconfig \
+            label node "$NODE" gpu=amd --overwrite
+          echo "✅ Label gpu=amd posé sur $NODE"
+          exit 0
+        fi
+        echo "Tentative $i/30 — $NODE pas encore Ready, attente 10s..."
+        sleep 10
+      done
+      echo "⚠ Timeout : $NODE pas Ready après 5 min — label non posé"
+      exit 1
+    EOT
+  }
+
+  depends_on = [null_resource.join_gpu_workers]
 }

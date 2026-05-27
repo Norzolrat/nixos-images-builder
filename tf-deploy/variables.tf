@@ -68,6 +68,16 @@ variable "gpu_node_label_value" {
   default     = "amd"
 }
 
+variable "gpu_node_name" {
+  description = <<-EOD
+    Nom exact du node Kubernetes portant le GPU AMD (ex: "nixos-kube-worker-3").
+    Terraform y posera automatiquement le label gpu=amd.
+    Laisser vide pour gérer le label manuellement via kubectl.
+  EOD
+  type    = string
+  default = ""
+}
+
 variable "pytorch_rocm_image" {
   description = <<-EOD
     Image Docker pour le test GPU AMD.
@@ -76,6 +86,17 @@ variable "pytorch_rocm_image" {
   EOD
   type    = string
   default = "rocm/rocm-terminal:latest"
+}
+
+# ========================================
+# LLM Stack
+# ========================================
+
+variable "searxng_secret_key" {
+  description = "Clé secrète SearXNG (chaîne aléatoire — générer avec: openssl rand -hex 32)"
+  type        = string
+  sensitive   = true
+  default     = "changeme-replace-with-random-secret"
 }
 
 # ========================================
