@@ -10,6 +10,10 @@ resource "kubernetes_namespace_v1" "hello_world" {
       environment = "demo"
     }
   }
+
+  timeouts {
+    delete = "15m"
+  }
 }
 
 # ════════════════════════════════════════

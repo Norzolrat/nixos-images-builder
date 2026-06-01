@@ -25,6 +25,12 @@ variable "gpu_node_label_value" {
   default     = "amd"
 }
 
+variable "gpu_node_ip" {
+  description = "IP du node GPU — utilisée pour les URLs NodePort accessibles hors cluster"
+  type        = string
+  default     = "192.168.99.189"
+}
+
 # ── Images Docker ────────────────────────────────────────────────
 
 variable "ollama_image" {
@@ -155,10 +161,5 @@ variable "ollama_cpu_request" {
 
 variable "comfyui_memory_request" {
   type    = string
-  default = "2Gi"
-}
-
-variable "comfyui_memory_limit" {
-  type    = string
-  default = "8Gi"
+  default = "4Gi"
 }

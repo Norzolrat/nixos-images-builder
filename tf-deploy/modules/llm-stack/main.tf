@@ -25,6 +25,10 @@ resource "kubernetes_namespace_v1" "llm" {
       environment = "ai"
     }
   }
+
+  timeouts {
+    delete = "15m"
+  }
 }
 
 # ════════════════════════════════════════════════════════════════
@@ -32,6 +36,8 @@ resource "kubernetes_namespace_v1" "llm" {
 # ════════════════════════════════════════════════════════════════
 
 resource "kubernetes_deployment_v1" "ollama" {
+  wait_for_rollout = false
+
   metadata {
     name      = "ollama"
     namespace = kubernetes_namespace_v1.llm.metadata[0].name
@@ -178,7 +184,8 @@ resource "kubernetes_service_v1" "ollama" {
 # ════════════════════════════════════════════════════════════════
 
 resource "kubernetes_deployment_v1" "comfyui" {
-  count = var.enable_comfyui ? 1 : 0
+  count            = var.enable_comfyui ? 1 : 0
+  wait_for_rollout = false
 
   metadata {
     name      = "comfyui"
@@ -219,9 +226,39 @@ resource "kubernetes_deployment_v1" "comfyui" {
           }
         }
 
+        init_container {
+          name  = "download-sd35-fp8"
+          image = "curlimages/curl:latest"
+
+          command = [
+            "sh", "-c",
+            <<-EOT
+              TARGET="/models/checkpoints/sd3.5_large_fp8_scaled.safetensors"
+              if [ -f "$TARGET" ]; then
+                echo "Model already present, skipping download."
+              else
+                mkdir -p /models/checkpoints
+                echo "Downloading SD3.5 Large FP8..."
+                curl -L --retry 5 --retry-delay 10 \
+                  "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/sd3.5_large_fp8_scaled.safetensors?download=true" \
+                  -o "$TARGET.tmp" && mv "$TARGET.tmp" "$TARGET"
+                echo "Download complete."
+              fi
+            EOT
+          ]
+
+          volume_mount {
+            name       = "models"
+            mount_path = "/models"
+          }
+        }
+
         container {
           name  = "comfyui"
           image = var.comfyui_image
+
+          # fp8_e4m3fn : force le calcul UNet en fp8 → ~9 GB VRAM au lieu de ~18 GB en fp16
+          command = ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--fp8_e4m3fn-unet", "--fp8_e4m3fn-text-enc"]
 
           port {
             name           = "ui"
@@ -250,9 +287,9 @@ resource "kubernetes_deployment_v1" "comfyui" {
             requests = {
               memory = var.comfyui_memory_request
             }
-            limits = {
-              memory = var.comfyui_memory_limit
-            }
+            # Pas de memory limit : le cgroup ne tue pas le process.
+            # Avec seulement 8Gi RAM totale sur le node, une limit fixe
+            # garantit un OOMKill lors du chargement de SD3.5 Large FP8 (~9Go).
           }
 
           security_context {
@@ -375,6 +412,8 @@ resource "kubernetes_service_v1" "comfyui" {
 # ════════════════════════════════════════════════════════════════
 
 resource "kubernetes_deployment_v1" "open_webui" {
+  wait_for_rollout = false
+
   metadata {
     name      = "open-webui"
     namespace = kubernetes_namespace_v1.llm.metadata[0].name
@@ -430,10 +469,14 @@ resource "kubernetes_deployment_v1" "open_webui" {
           }
           env {
             name  = "COMFYUI_BASE_URL"
-            value = "http://comfyui.${var.namespace}.svc.cluster.local:8188"
+            value = "http://${var.gpu_node_ip}:${var.comfyui_node_port}"
           }
           env {
             name  = "WEBUI_AUTH"
+            value = "true"
+          }
+          env {
+            name  = "ENABLE_RAG_LOCAL_WEB_FETCH"
             value = "true"
           }
 
@@ -567,7 +610,8 @@ resource "kubernetes_config_map_v1" "searxng_config" {
 }
 
 resource "kubernetes_deployment_v1" "searxng" {
-  count = var.enable_searxng ? 1 : 0
+  count            = var.enable_searxng ? 1 : 0
+  wait_for_rollout = false
 
   metadata {
     name      = "searxng"

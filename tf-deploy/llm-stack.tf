@@ -18,6 +18,10 @@ module "llm_stack" {
   gpu_node_label_key   = var.gpu_node_label_key
   gpu_node_label_value = var.gpu_node_label_value
 
+  enable_comfyui = true
+  enable_searxng = true
+
+
   # Clé secrète SearXNG
   searxng_secret_key = var.searxng_secret_key
 
