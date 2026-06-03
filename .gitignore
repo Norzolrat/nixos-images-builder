@@ -6,6 +6,7 @@ result-*
 
 # Terraform
 **/.terraform/
+**/output/
 **/.terraform.lock.hcl
 **/terraform.tfstate
 **/terraform.tfstate.backup
