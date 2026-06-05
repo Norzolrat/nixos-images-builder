@@ -12,8 +12,8 @@ apply:
 	                -target=null_resource.wait_kubernetes_ready
 
 list-mod:
-	@echo "=== Modules disponibles ==="
-	@ls modules/deployment/modules/
+	@echo "=== Modules disponibles (nom MODULE= à utiliser) ==="
+	@grep '^module "' modules/deployment/main.tf | sed 's/module "\(.*\)" {/\1/'
 	@echo ""
 	@echo "=== Modules dans le state Terraform ==="
 	@terraform state list 2>/dev/null | grep "^module\.deployment\.module\." | sed 's/module\.deployment\.module\.\([^.]*\).*/\1/' | sort -u

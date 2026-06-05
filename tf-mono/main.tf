@@ -152,6 +152,14 @@ module "deployment" {
   cloudflared_image       = var.cloudflared_image
   dmz_vlan_ip             = var.dmz_vlan_ip
 
+  perso_vlan_ip                  = var.perso_vlan_ip
+  perso_host_data_path           = var.perso_host_data_path
+  perso_postgres_password        = var.perso_postgres_password
+  perso_mariadb_password         = var.perso_mariadb_password
+  perso_passbolt_app_url         = var.perso_passbolt_app_url
+  perso_passbolt_gpg_fingerprint = var.perso_passbolt_gpg_fingerprint
+  perso_ghostfolio_secret        = var.perso_ghostfolio_secret
+
   llm_ai_vlan_ip         = var.llm_ai_vlan_ip
   llm_enable_comfyui     = var.llm_enable_comfyui
   llm_enable_searxng     = var.llm_enable_searxng

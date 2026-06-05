@@ -275,6 +275,49 @@ variable "matrix_external_ip" {
 }
 
 # ========================================
+# Perso Stack (Passbolt · Affine · NextExplorer · Ghostfolio)
+# ========================================
+
+variable "perso_vlan_ip" {
+  description = "IP du VLAN perso (Passbolt · Affine · NextExplorer · Ghostfolio)"
+  type        = string
+  default     = "10.0.5.200"
+}
+
+variable "perso_host_data_path" {
+  type    = string
+  default = "/opt/perso"
+}
+
+variable "perso_postgres_password" {
+  type      = string
+  sensitive = true
+  default   = "changeme"
+}
+
+variable "perso_mariadb_password" {
+  type      = string
+  sensitive = true
+  default   = "changeme"
+}
+
+variable "perso_passbolt_app_url" {
+  type    = string
+  default = "http://10.0.5.200:8080"
+}
+
+variable "perso_passbolt_gpg_fingerprint" {
+  type    = string
+  default = ""
+}
+
+variable "perso_ghostfolio_secret" {
+  type      = string
+  sensitive = true
+  default   = "changeme-replace-with-random-secret"
+}
+
+# ========================================
 # LLM Stack (Ollama · Open-WebUI · ComfyUI · SearXNG)
 # ========================================
 

@@ -59,6 +59,44 @@ variable "dmz_vlan_ip" {
 }
 
 # ========================================
+# Perso Stack
+# ========================================
+
+variable "perso_vlan_ip" {
+  description = "IP du VLAN perso pour les services personnels"
+  type        = string
+}
+
+variable "perso_host_data_path" {
+  type    = string
+  default = "/opt/perso"
+}
+
+variable "perso_postgres_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "perso_mariadb_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "perso_passbolt_app_url" {
+  type = string
+}
+
+variable "perso_passbolt_gpg_fingerprint" {
+  type    = string
+  default = ""
+}
+
+variable "perso_ghostfolio_secret" {
+  type      = string
+  sensitive = true
+}
+
+# ========================================
 # LLM Stack
 # ========================================
 

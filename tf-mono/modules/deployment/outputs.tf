@@ -1,3 +1,7 @@
+output "perso_info" {
+  value = module.perso.perso_info
+}
+
 output "cloudflare_info" {
   value = module.cloudflare.info
 }

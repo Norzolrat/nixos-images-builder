@@ -44,6 +44,19 @@ module "traefik" {
   dmz_vlan_ip = var.dmz_vlan_ip
 }
 
+module "perso" {
+  source = "./modules/perso"
+
+  namespace                = "perso"
+  perso_vlan_ip            = var.perso_vlan_ip
+  host_data_path           = var.perso_host_data_path
+  postgres_password        = var.perso_postgres_password
+  mariadb_password         = var.perso_mariadb_password
+  passbolt_app_url         = var.perso_passbolt_app_url
+  passbolt_gpg_fingerprint = var.perso_passbolt_gpg_fingerprint
+  ghostfolio_secret        = var.perso_ghostfolio_secret
+}
+
 module "llm_stack" {
   source = "./modules/llm-stack"
 
