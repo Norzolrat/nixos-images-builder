@@ -1,4 +1,4 @@
-.PHONY: apply destroy init kube kube-del
+.PHONY: apply destroy init kube kube-del list-mod
 
 # Deux passes obligatoires :
 # 1) provision du cluster + récupération du kubeconfig frais + join command
@@ -10,6 +10,13 @@ apply:
 	                -target=null_resource.wait_cloud_init \
 	                -target=null_resource.fetch_kubeconfig \
 	                -target=null_resource.wait_kubernetes_ready
+
+list-mod:
+	@echo "=== Modules disponibles ==="
+	@ls modules/deployment/modules/
+	@echo ""
+	@echo "=== Modules dans le state Terraform ==="
+	@terraform state list 2>/dev/null | grep "^module\.deployment\.module\." | sed 's/module\.deployment\.module\.\([^.]*\).*/\1/' | sort -u
 
 # Usage : make kube MODULE=llm_stack | traefik | cloudflare | mario | starwars | matrix
 kube:
