@@ -48,6 +48,8 @@ module "master" {
   pod_network_cidr = var.pod_network_cidr
   calico_version   = var.calico_version
 
+  gpu_pci_mapping = var.gpu_pci_mapping
+
   manager_user           = var.manager_user
   manager_ssh_public_key = var.manager_ssh_public_key
   ssh_private_key_path   = var.ssh_private_key_path
@@ -101,6 +103,37 @@ resource "null_resource" "fetch_kubeconfig" {
   depends_on = [null_resource.wait_cloud_init]
 }
 
+# ========================================
+# Attente que l'API Kubernetes soit prête
+# (le provider K8s s'initialise au démarrage du apply —
+#  sans ce check, la passe 2 peut tomber sur Unauthorized
+#  si l'API server n'a pas encore fini de démarrer)
+# ========================================
+
+resource "null_resource" "wait_kubernetes_ready" {
+  triggers = {
+    vm_id = module.master.vm_id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Attente que l'API Kubernetes soit prête..."
+      for i in $(seq 1 36); do
+        if kubectl --kubeconfig ./output/kubeconfig --insecure-skip-tls-verify get nodes >/dev/null 2>&1; then
+          echo "API Kubernetes prête !"
+          exit 0
+        fi
+        echo "Tentative $i/36 — pas encore prête, attente 10s..."
+        sleep 10
+      done
+      echo "Timeout : API Kubernetes pas prête après 6 min"
+      exit 1
+    EOT
+  }
+
+  depends_on = [null_resource.fetch_kubeconfig]
+}
+
 
 # ========================================
 # Module deployment — hello-world pods
@@ -115,5 +148,15 @@ module "deployment" {
   starwars_external_ip = var.starwars_external_ip
   matrix_external_ip   = var.matrix_external_ip
 
-  depends_on = [null_resource.fetch_kubeconfig]
+  cloudflare_tunnel_token = var.cloudflare_tunnel_token
+  cloudflared_image       = var.cloudflared_image
+  dmz_vlan_ip             = var.dmz_vlan_ip
+
+  llm_ai_vlan_ip         = var.llm_ai_vlan_ip
+  llm_enable_comfyui     = var.llm_enable_comfyui
+  llm_enable_searxng     = var.llm_enable_searxng
+  llm_searxng_secret_key = var.llm_searxng_secret_key
+  llm_host_data_path     = var.llm_host_data_path
+
+  depends_on = [null_resource.wait_kubernetes_ready]
 }

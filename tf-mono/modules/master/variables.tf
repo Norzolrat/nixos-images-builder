@@ -58,6 +58,16 @@ variable "vm_tags" {
 }
 
 # ========================================
+# Configuration GPU passthrough
+# ========================================
+
+variable "gpu_pci_mapping" {
+  description = "Nom du resource mapping PCI déclaré dans Proxmox (Datacenter → Resource Mappings → PCI Devices)"
+  type        = string
+  default     = "amd-gpu"
+}
+
+# ========================================
 # Configuration Réseau
 # ========================================
 

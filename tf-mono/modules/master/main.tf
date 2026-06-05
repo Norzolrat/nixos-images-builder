@@ -75,6 +75,15 @@ resource "proxmox_virtual_environment_vm" "master" {
     type              = "4m"
   }
 
+  # Passthrough PCIe — carte AMD via resource mapping Proxmox
+  hostpci {
+    device  = "hostpci0"
+    mapping = var.gpu_pci_mapping
+    pcie    = true
+    rombar  = true
+    xvga    = false
+  }
+
   network_device {
     bridge = var.network_bridge
     model  = "virtio"

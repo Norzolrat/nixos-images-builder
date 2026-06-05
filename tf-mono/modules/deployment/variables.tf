@@ -32,3 +32,59 @@ variable "matrix_external_ip" {
   description = "IP du VLAN pour Matrix 💊 (VLAN ai)"
   type        = string
 }
+
+# ========================================
+# Cloudflare Tunnel
+# ========================================
+
+variable "cloudflare_tunnel_token" {
+  description = "Token du tunnel Cloudflare (Zero Trust > Networks > Tunnels > Configure > Token)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "cloudflared_image" {
+  type    = string
+  default = "cloudflare/cloudflared:latest"
+}
+
+# ========================================
+# Traefik (VLAN dmz)
+# ========================================
+
+variable "dmz_vlan_ip" {
+  description = "IP du VLAN dmz pour Traefik"
+  type        = string
+}
+
+# ========================================
+# LLM Stack
+# ========================================
+
+variable "llm_ai_vlan_ip" {
+  description = "IP du VLAN ai pour exposer les APIs LLM"
+  type        = string
+}
+
+variable "llm_enable_comfyui" {
+  type    = bool
+  default = false
+}
+
+variable "llm_enable_searxng" {
+  type    = bool
+  default = false
+}
+
+variable "llm_searxng_secret_key" {
+  type      = string
+  sensitive = true
+  default   = "changeme-replace-with-random-secret"
+}
+
+variable "llm_host_data_path" {
+  description = "Chemin de base sur le node pour les données LLM persistantes"
+  type        = string
+  default     = "/opt/llm"
+}

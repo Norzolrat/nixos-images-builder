@@ -1,3 +1,11 @@
+output "cloudflare_info" {
+  value = module.cloudflare.info
+}
+
+output "llm_stack_info" {
+  value = module.llm_stack.stack_info
+}
+
 output "deployment_info" {
   description = "Résumé des déploiements hello-world"
   value       = <<-EOT

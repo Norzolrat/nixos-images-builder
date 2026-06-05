@@ -195,6 +195,16 @@ variable "timezone" {
 }
 
 # ========================================
+# GPU passthrough (master)
+# ========================================
+
+variable "gpu_pci_mapping" {
+  description = "Nom du resource mapping PCI déclaré dans Proxmox (Datacenter → Resource Mappings → PCI Devices)"
+  type        = string
+  default     = "amd-gpu"
+}
+
+# ========================================
 # Kubernetes — provider
 # ========================================
 
@@ -226,6 +236,32 @@ variable "mario_external_ip" {
   default     = "10.0.1.200"
 }
 
+# ========================================
+# Cloudflare Tunnel
+# ========================================
+
+variable "cloudflare_tunnel_token" {
+  description = "Token du tunnel Cloudflare (Zero Trust > Networks > Tunnels > Configure > Token)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "cloudflared_image" {
+  type    = string
+  default = "cloudflare/cloudflared:latest"
+}
+
+# ========================================
+# Traefik (VLAN dmz)
+# ========================================
+
+variable "dmz_vlan_ip" {
+  description = "IP du VLAN dmz pour Traefik (ports 80 et 443)"
+  type        = string
+  default     = "10.0.1.200"
+}
+
 variable "starwars_external_ip" {
   description = "IP du VLAN pour le thème Star Wars ⚔️ — VLAN perso (sans le masque CIDR)"
   type        = string
@@ -236,4 +272,39 @@ variable "matrix_external_ip" {
   description = "IP du VLAN pour le thème Matrix 💊 — VLAN ai (sans le masque CIDR)"
   type        = string
   default     = "10.0.10.200"
+}
+
+# ========================================
+# LLM Stack (Ollama · Open-WebUI · ComfyUI · SearXNG)
+# ========================================
+
+variable "llm_ai_vlan_ip" {
+  description = "IP du VLAN ai pour les APIs LLM (défaut : même IP que le VLAN ai)"
+  type        = string
+  default     = "10.0.10.200"
+}
+
+variable "llm_enable_comfyui" {
+  description = "Déployer ComfyUI (Stable Diffusion)"
+  type        = bool
+  default     = false
+}
+
+variable "llm_enable_searxng" {
+  description = "Déployer SearXNG (moteur de recherche privé)"
+  type        = bool
+  default     = false
+}
+
+variable "llm_searxng_secret_key" {
+  description = "Clé secrète SearXNG (générer avec : openssl rand -hex 32)"
+  type        = string
+  sensitive   = true
+  default     = "changeme-replace-with-random-secret"
+}
+
+variable "llm_host_data_path" {
+  description = "Chemin de base sur le node pour les données LLM persistantes"
+  type        = string
+  default     = "/opt/llm"
 }
