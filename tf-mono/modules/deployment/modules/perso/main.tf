@@ -9,8 +9,7 @@
 #    Ghostfolio   → http://<perso_vlan_ip>:3333
 #
 #  Infrastructure interne (ClusterIP uniquement) :
-#    PostgreSQL → Affine + Ghostfolio
-#    MariaDB    → Passbolt
+#    PostgreSQL → Affine + Ghostfolio + Passbolt
 #    Redis      → Affine + Ghostfolio
 # ════════════════════════════════════════════════════════════════
 
@@ -29,7 +28,7 @@ resource "kubernetes_namespace_v1" "this" {
 }
 
 # ════════════════════════════════════════════════════════════════
-#  POSTGRESQL — Base partagée Affine + Ghostfolio  🐘
+#  POSTGRESQL 
 # ════════════════════════════════════════════════════════════════
 
 resource "kubernetes_config_map_v1" "postgres_init" {
@@ -43,6 +42,7 @@ resource "kubernetes_config_map_v1" "postgres_init" {
     "init.sql" = <<-SQL
       CREATE DATABASE affine;
       CREATE DATABASE ghostfolio;
+      CREATE DATABASE passbolt;
     SQL
   }
 }
@@ -135,96 +135,7 @@ resource "kubernetes_service_v1" "postgres" {
 }
 
 # ════════════════════════════════════════════════════════════════
-#  MARIADB — Passbolt  🐬
-# ════════════════════════════════════════════════════════════════
-
-resource "kubernetes_deployment_v1" "mariadb" {
-  wait_for_rollout = false
-
-  metadata {
-    name      = "mariadb"
-    namespace = kubernetes_namespace_v1.this.metadata[0].name
-    labels    = { app = "mariadb", managed-by = "terraform" }
-  }
-
-  spec {
-    replicas = 1
-    selector { match_labels = { app = "mariadb" } }
-    strategy { type = "Recreate" }
-
-    template {
-      metadata { labels = { app = "mariadb" } }
-
-      spec {
-        toleration {
-          key      = "node-role.kubernetes.io/control-plane"
-          operator = "Exists"
-          effect   = "NoSchedule"
-        }
-
-        container {
-          name  = "mariadb"
-          image = var.mariadb_image
-
-          env {
-            name  = "MYSQL_ROOT_PASSWORD"
-            value = var.mariadb_password
-          }
-          env {
-            name  = "MYSQL_DATABASE"
-            value = "passbolt"
-          }
-          env {
-            name  = "MYSQL_USER"
-            value = "passbolt"
-          }
-          env {
-            name  = "MYSQL_PASSWORD"
-            value = var.mariadb_password
-          }
-
-          resources {
-            requests = { cpu = "100m", memory = "256Mi" }
-            limits   = { memory = "512Mi" }
-          }
-
-          volume_mount {
-            name       = "data"
-            mount_path = "/var/lib/mysql"
-          }
-        }
-
-        volume {
-          name = "data"
-          host_path {
-            path = "${var.host_data_path}/mariadb"
-            type = "DirectoryOrCreate"
-          }
-        }
-      }
-    }
-  }
-}
-
-resource "kubernetes_service_v1" "mariadb" {
-  metadata {
-    name      = "mariadb"
-    namespace = kubernetes_namespace_v1.this.metadata[0].name
-    labels    = { app = "mariadb", managed-by = "terraform" }
-  }
-  spec {
-    selector = { app = "mariadb" }
-    type     = "ClusterIP"
-    port {
-      port        = 3306
-      target_port = 3306
-      protocol    = "TCP"
-    }
-  }
-}
-
-# ════════════════════════════════════════════════════════════════
-#  REDIS — Cache partagé Affine + Ghostfolio  🔴
+#  REDIS
 # ════════════════════════════════════════════════════════════════
 
 resource "kubernetes_deployment_v1" "redis" {
@@ -283,6 +194,23 @@ resource "kubernetes_service_v1" "redis" {
 }
 
 # ════════════════════════════════════════════════════════════════
+#  PASSBOLT — GPG Keys Secret
+# ════════════════════════════════════════════════════════════════
+
+resource "kubernetes_secret_v1" "passbolt_gpg" {
+  metadata {
+    name      = "passbolt-gpg"
+    namespace = kubernetes_namespace_v1.this.metadata[0].name
+    labels    = { app = "passbolt", managed-by = "terraform" }
+  }
+
+  data = {
+    "serverkey.asc"         = var.passbolt_gpg_public_key
+    "serverkey_private.asc" = var.passbolt_gpg_private_key
+  }
+}
+
+# ════════════════════════════════════════════════════════════════
 #  PASSBOLT — Gestionnaire de mots de passe  🔑  :8080
 #
 #  Procédure 1er démarrage :
@@ -318,6 +246,17 @@ resource "kubernetes_deployment_v1" "passbolt" {
           effect   = "NoSchedule"
         }
 
+        init_container {
+          name    = "fix-perms"
+          image   = "busybox:latest"
+          command = ["sh", "-c", "chmod -R 777 /etc/passbolt/jwt"]
+
+          volume_mount {
+            name       = "jwt"
+            mount_path = "/etc/passbolt/jwt"
+          }
+        }
+
         container {
           name  = "passbolt"
           image = var.passbolt_image
@@ -329,20 +268,32 @@ resource "kubernetes_deployment_v1" "passbolt" {
           }
 
           env {
+            name  = "DATASOURCES_DEFAULT_DRIVER"
+            value = "Cake\\Database\\Driver\\Postgres"
+          }
+          env {
             name  = "DATASOURCES_DEFAULT_HOST"
-            value = "mariadb.${var.namespace}.svc.cluster.local"
+            value = "postgres.${var.namespace}.svc.cluster.local"
+          }
+          env {
+            name  = "DATASOURCES_DEFAULT_PORT"
+            value = "5432"
           }
           env {
             name  = "DATASOURCES_DEFAULT_USERNAME"
-            value = "passbolt"
+            value = "postgres"
           }
           env {
             name  = "DATASOURCES_DEFAULT_PASSWORD"
-            value = var.mariadb_password
+            value = var.postgres_password
           }
           env {
             name  = "DATASOURCES_DEFAULT_DATABASE"
             value = "passbolt"
+          }
+          env {
+            name  = "DATASOURCES_DEFAULT_ENCODING"
+            value = "utf8"
           }
           env {
             name  = "APP_FULL_BASE_URL"
@@ -374,9 +325,9 @@ resource "kubernetes_deployment_v1" "passbolt" {
 
         volume {
           name = "gpg"
-          host_path {
-            path = "${var.host_data_path}/passbolt/gpg"
-            type = "DirectoryOrCreate"
+          secret {
+            secret_name  = kubernetes_secret_v1.passbolt_gpg.metadata[0].name
+            default_mode = "0444"
           }
         }
         volume {
@@ -390,7 +341,7 @@ resource "kubernetes_deployment_v1" "passbolt" {
     }
   }
 
-  depends_on = [kubernetes_deployment_v1.mariadb]
+  depends_on = [kubernetes_deployment_v1.postgres, kubernetes_secret_v1.passbolt_gpg]
 }
 
 resource "kubernetes_service_v1" "passbolt" {
@@ -407,6 +358,12 @@ resource "kubernetes_service_v1" "passbolt" {
       name        = "http"
       port        = 8080
       target_port = 80
+      protocol    = "TCP"
+    }
+    port {
+      name        = "https"
+      port        = 8443
+      target_port = 443
       protocol    = "TCP"
     }
   }
@@ -440,6 +397,34 @@ resource "kubernetes_deployment_v1" "affine" {
           effect   = "NoSchedule"
         }
 
+        init_container {
+          name    = "affine-migration"
+          image   = var.affine_image
+          command = ["sh", "-c", "node ./scripts/self-host-predeploy.js"]
+
+          env {
+            name  = "DATABASE_URL"
+            value = "postgresql://postgres:${var.postgres_password}@postgres.${var.namespace}.svc.cluster.local:5432/affine"
+          }
+          env {
+            name  = "REDIS_SERVER_HOST"
+            value = "redis.${var.namespace}.svc.cluster.local"
+          }
+          env {
+            name  = "AFFINE_INDEXER_ENABLED"
+            value = "false"
+          }
+
+          volume_mount {
+            name       = "storage"
+            mount_path = "/root/.affine/storage"
+          }
+          volume_mount {
+            name       = "config"
+            mount_path = "/root/.affine/config"
+          }
+        }
+
         container {
           name  = "affine"
           image = var.affine_image
@@ -455,10 +440,6 @@ resource "kubernetes_deployment_v1" "affine" {
             value = "production"
           }
           env {
-            name  = "SERVER_FLAVOR"
-            value = "selfhosted"
-          }
-          env {
             name  = "DATABASE_URL"
             value = "postgresql://postgres:${var.postgres_password}@postgres.${var.namespace}.svc.cluster.local:5432/affine"
           }
@@ -470,6 +451,10 @@ resource "kubernetes_deployment_v1" "affine" {
             name  = "REDIS_SERVER_PORT"
             value = "6379"
           }
+          env {
+            name  = "AFFINE_INDEXER_ENABLED"
+            value = "false"
+          }
 
           resources {
             requests = { cpu = "100m", memory = "256Mi" }
@@ -477,15 +462,26 @@ resource "kubernetes_deployment_v1" "affine" {
           }
 
           volume_mount {
-            name       = "data"
-            mount_path = "/root/.affine"
+            name       = "storage"
+            mount_path = "/root/.affine/storage"
+          }
+          volume_mount {
+            name       = "config"
+            mount_path = "/root/.affine/config"
           }
         }
 
         volume {
-          name = "data"
+          name = "storage"
           host_path {
-            path = "${var.host_data_path}/affine"
+            path = "${var.host_data_path}/affine/storage"
+            type = "DirectoryOrCreate"
+          }
+        }
+        volume {
+          name = "config"
+          host_path {
+            path = "${var.host_data_path}/affine/config"
             type = "DirectoryOrCreate"
           }
         }
@@ -510,98 +506,6 @@ resource "kubernetes_service_v1" "affine" {
       name        = "http"
       port        = 3010
       target_port = 3010
-      protocol    = "TCP"
-    }
-  }
-}
-
-# ════════════════════════════════════════════════════════════════
-#  NEXTEXPLORER — Explorateur de fichiers  📁  :8085
-# ════════════════════════════════════════════════════════════════
-
-resource "kubernetes_deployment_v1" "nextexplorer" {
-  wait_for_rollout = false
-
-  metadata {
-    name      = "nextexplorer"
-    namespace = kubernetes_namespace_v1.this.metadata[0].name
-    labels    = { app = "nextexplorer", managed-by = "terraform" }
-  }
-
-  spec {
-    replicas = 1
-    selector { match_labels = { app = "nextexplorer" } }
-    strategy { type = "Recreate" }
-
-    template {
-      metadata { labels = { app = "nextexplorer" } }
-
-      spec {
-        toleration {
-          key      = "node-role.kubernetes.io/control-plane"
-          operator = "Exists"
-          effect   = "NoSchedule"
-        }
-
-        container {
-          name    = "nextexplorer"
-          image   = var.nextexplorer_image
-          command = ["/filebrowser", "--root", "/data", "--database", "/config/filebrowser.db", "--address", "0.0.0.0", "--port", "80"]
-
-          port {
-            name           = "http"
-            container_port = 80
-            protocol       = "TCP"
-          }
-
-          resources {
-            requests = { cpu = "50m", memory = "64Mi" }
-            limits   = { memory = "256Mi" }
-          }
-
-          volume_mount {
-            name       = "data"
-            mount_path = "/data"
-          }
-          volume_mount {
-            name       = "config"
-            mount_path = "/config"
-          }
-        }
-
-        volume {
-          name = "data"
-          host_path {
-            path = "${var.host_data_path}/nextexplorer/data"
-            type = "DirectoryOrCreate"
-          }
-        }
-        volume {
-          name = "config"
-          host_path {
-            path = "${var.host_data_path}/nextexplorer/config"
-            type = "DirectoryOrCreate"
-          }
-        }
-      }
-    }
-  }
-}
-
-resource "kubernetes_service_v1" "nextexplorer" {
-  metadata {
-    name      = "nextexplorer"
-    namespace = kubernetes_namespace_v1.this.metadata[0].name
-    labels    = { app = "nextexplorer", managed-by = "terraform" }
-  }
-  spec {
-    selector     = { app = "nextexplorer" }
-    type         = "ClusterIP"
-    external_ips = [var.perso_vlan_ip]
-    port {
-      name        = "http"
-      port        = 8085
-      target_port = 80
       protocol    = "TCP"
     }
   }
@@ -651,7 +555,7 @@ resource "kubernetes_deployment_v1" "ghostfolio" {
           }
           env {
             name  = "DATABASE_URL"
-            value = "postgresql://postgres:${var.postgres_password}@postgres.${var.namespace}.svc.cluster.local:5432/ghostfolio?sslmode=prefer"
+            value = "postgresql://postgres:${var.postgres_password}@postgres.${var.namespace}.svc.cluster.local:5432/ghostfolio?sslmode=disable"
           }
           env {
             name  = "REDIS_HOST"

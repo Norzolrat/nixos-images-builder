@@ -18,18 +18,18 @@ variable "nginx_image" {
 # IPs externes (une par VLAN)
 # ========================================
 
-variable "mario_external_ip" {
-  description = "IP du VLAN pour Mario 🍄 (VLAN dmz)"
+variable "vlan1_external_ip" {
+  description = "IP du VLAN 1 (VLAN dmz)"
   type        = string
 }
 
-variable "starwars_external_ip" {
-  description = "IP du VLAN pour Star Wars ⚔️ (VLAN perso)"
+variable "vlan10_external_ip" {
+  description = "IP du VLAN 10 (VLAN perso)"
   type        = string
 }
 
-variable "matrix_external_ip" {
-  description = "IP du VLAN pour Matrix 💊 (VLAN ai)"
+variable "vlan5_external_ip" {
+  description = "IP du VLAN 5 (VLAN ai)"
   type        = string
 }
 
@@ -77,18 +77,21 @@ variable "perso_postgres_password" {
   sensitive = true
 }
 
-variable "perso_mariadb_password" {
-  type      = string
-  sensitive = true
-}
-
 variable "perso_passbolt_app_url" {
   type = string
 }
 
 variable "perso_passbolt_gpg_fingerprint" {
-  type    = string
-  default = ""
+  type = string
+}
+
+variable "perso_passbolt_gpg_public_key" {
+  type = string
+}
+
+variable "perso_passbolt_gpg_private_key" {
+  type      = string
+  sensitive = true
 }
 
 variable "perso_ghostfolio_secret" {

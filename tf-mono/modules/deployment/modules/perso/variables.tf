@@ -14,13 +14,7 @@ variable "host_data_path" {
 }
 
 variable "postgres_password" {
-  description = "Mot de passe PostgreSQL (Affine + Ghostfolio)"
-  type        = string
-  sensitive   = true
-}
-
-variable "mariadb_password" {
-  description = "Mot de passe MariaDB pour Passbolt"
+  description = "Mot de passe PostgreSQL (Affine + Ghostfolio + Passbolt)"
   type        = string
   sensitive   = true
 }
@@ -31,9 +25,19 @@ variable "passbolt_app_url" {
 }
 
 variable "passbolt_gpg_fingerprint" {
-  description = "Empreinte GPG Passbolt — vide au 1er déploiement, récupérer via: kubectl logs -n perso deploy/passbolt | grep -i fingerprint"
+  description = "Empreinte GPG du serveur Passbolt"
   type        = string
-  default     = ""
+}
+
+variable "passbolt_gpg_public_key" {
+  description = "Clé publique GPG du serveur Passbolt (format armor)"
+  type        = string
+}
+
+variable "passbolt_gpg_private_key" {
+  description = "Clé privée GPG du serveur Passbolt (format armor)"
+  type        = string
+  sensitive   = true
 }
 
 variable "ghostfolio_secret" {
@@ -46,12 +50,7 @@ variable "ghostfolio_secret" {
 
 variable "postgres_image" {
   type    = string
-  default = "postgres:16-alpine"
-}
-
-variable "mariadb_image" {
-  type    = string
-  default = "mariadb:11"
+  default = "pgvector/pgvector:pg16"
 }
 
 variable "redis_image" {
@@ -61,18 +60,12 @@ variable "redis_image" {
 
 variable "passbolt_image" {
   type    = string
-  default = "passbolt/passbolt:4-ce-non-root"
+  default = "passbolt/passbolt:latest"
 }
 
 variable "affine_image" {
   type    = string
-  default = "ghcr.io/toeverything/affine-graphql:stable"
-}
-
-variable "nextexplorer_image" {
-  description = "Image NextExplorer — filebrowser par défaut, à remplacer si besoin"
-  type        = string
-  default     = "filebrowser/filebrowser:latest"
+  default = "ghcr.io/toeverything/affine:stable"
 }
 
 variable "ghostfolio_image" {

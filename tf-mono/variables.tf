@@ -230,12 +230,6 @@ variable "deployment_nginx_image" {
   default     = "nginx:alpine"
 }
 
-variable "mario_external_ip" {
-  description = "IP du VLAN pour le thème Mario 🍄 — VLAN dmz (sans le masque CIDR)"
-  type        = string
-  default     = "10.0.1.200"
-}
-
 # ========================================
 # Cloudflare Tunnel
 # ========================================
@@ -256,19 +250,19 @@ variable "cloudflared_image" {
 # Traefik (VLAN dmz)
 # ========================================
 
-variable "dmz_vlan_ip" {
+variable "vlan1_external_ip" {
   description = "IP du VLAN dmz pour Traefik (ports 80 et 443)"
   type        = string
   default     = "10.0.1.200"
 }
 
-variable "starwars_external_ip" {
+variable "vlan5_external_ip" {
   description = "IP du VLAN pour le thème Star Wars ⚔️ — VLAN perso (sans le masque CIDR)"
   type        = string
   default     = "10.0.5.200"
 }
 
-variable "matrix_external_ip" {
+variable "vlan10_external_ip" {
   description = "IP du VLAN pour le thème Matrix 💊 — VLAN ai (sans le masque CIDR)"
   type        = string
   default     = "10.0.10.200"
@@ -295,20 +289,22 @@ variable "perso_postgres_password" {
   default   = "changeme"
 }
 
-variable "perso_mariadb_password" {
-  type      = string
-  sensitive = true
-  default   = "changeme"
-}
-
 variable "perso_passbolt_app_url" {
   type    = string
   default = "http://10.0.5.200:8080"
 }
 
 variable "perso_passbolt_gpg_fingerprint" {
-  type    = string
-  default = ""
+  type = string
+}
+
+variable "perso_passbolt_gpg_public_key" {
+  type = string
+}
+
+variable "perso_passbolt_gpg_private_key" {
+  type      = string
+  sensitive = true
 }
 
 variable "perso_ghostfolio_secret" {

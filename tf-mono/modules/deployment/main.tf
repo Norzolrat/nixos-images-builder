@@ -2,31 +2,13 @@
 #  Sous-modules hello-world (namespace propre à chacun)
 # ════════════════════════════════════════
 
-module "mario" {
-  source = "./modules/mario"
+module "hello" {
+  source = "./modules/hello"
 
-  namespace   = "hello-mario"
+  namespace   = "hello-world"
   replicas    = var.replicas
   nginx_image = var.nginx_image
-  external_ip = var.mario_external_ip
-}
-
-module "starwars" {
-  source = "./modules/starwars"
-
-  namespace   = "hello-starwars"
-  replicas    = var.replicas
-  nginx_image = var.nginx_image
-  external_ip = var.starwars_external_ip
-}
-
-module "matrix" {
-  source = "./modules/matrix"
-
-  namespace   = "hello-matrix"
-  replicas    = var.replicas
-  nginx_image = var.nginx_image
-  external_ip = var.matrix_external_ip
+  external_ip = var.vlan10_external_ip
 }
 
 module "cloudflare" {
@@ -51,9 +33,10 @@ module "perso" {
   perso_vlan_ip            = var.perso_vlan_ip
   host_data_path           = var.perso_host_data_path
   postgres_password        = var.perso_postgres_password
-  mariadb_password         = var.perso_mariadb_password
   passbolt_app_url         = var.perso_passbolt_app_url
   passbolt_gpg_fingerprint = var.perso_passbolt_gpg_fingerprint
+  passbolt_gpg_public_key  = var.perso_passbolt_gpg_public_key
+  passbolt_gpg_private_key = var.perso_passbolt_gpg_private_key
   ghostfolio_secret        = var.perso_ghostfolio_secret
 }
 

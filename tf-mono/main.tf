@@ -144,20 +144,21 @@ module "deployment" {
 
   replicas             = var.deployment_replicas
   nginx_image          = var.deployment_nginx_image
-  mario_external_ip    = var.mario_external_ip
-  starwars_external_ip = var.starwars_external_ip
-  matrix_external_ip   = var.matrix_external_ip
+  vlan1_external_ip    = var.vlan1_external_ip
+  vlan5_external_ip = var.vlan5_external_ip
+  vlan10_external_ip   = var.vlan10_external_ip
 
   cloudflare_tunnel_token = var.cloudflare_tunnel_token
   cloudflared_image       = var.cloudflared_image
-  dmz_vlan_ip             = var.dmz_vlan_ip
+  dmz_vlan_ip             = var.vlan1_external_ip
 
   perso_vlan_ip                  = var.perso_vlan_ip
   perso_host_data_path           = var.perso_host_data_path
   perso_postgres_password        = var.perso_postgres_password
-  perso_mariadb_password         = var.perso_mariadb_password
   perso_passbolt_app_url         = var.perso_passbolt_app_url
   perso_passbolt_gpg_fingerprint = var.perso_passbolt_gpg_fingerprint
+  perso_passbolt_gpg_public_key  = var.perso_passbolt_gpg_public_key
+  perso_passbolt_gpg_private_key = var.perso_passbolt_gpg_private_key
   perso_ghostfolio_secret        = var.perso_ghostfolio_secret
 
   llm_ai_vlan_ip         = var.llm_ai_vlan_ip

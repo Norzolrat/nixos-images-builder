@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hello World — Star Wars</title>
+<style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #0d0d1a 0%, #000005 100%);
+    font-family: 'Trebuchet MS', 'Franklin Gothic Medium', sans-serif;
+    color: #fff;
+    overflow: hidden;
+    }
+
+    .stars {
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 5%   8%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 15%  22%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 28%  65%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 42%  12%, rgba(255,255,255,0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55%  78%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 68%  35%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 78%  55%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88%  18%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 93%  88%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(2px 2px at 20%  90%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 62%  48%, rgba(255,255,255,0.9) 0%, transparent 100%),
+        radial-gradient(2px 2px at 35%  42%, rgba(200,180,255,0.4) 0%, transparent 100%);
+    animation: twinkle 4s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+    0%   { opacity: 0.7; }
+    100% { opacity: 1; }
+    }
+
+    .nebula {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.08;
+    }
+    .nebula-1 { width: 600px; height: 400px; background: #4040ff; top: -100px; left: -150px; }
+    .nebula-2 { width: 500px; height: 350px; background: #ff4040; bottom: -80px; right: -120px; }
+
+    .card {
+    position: relative;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,232,0,0.35);
+    border-radius: 6px;
+    padding: 60px 72px;
+    text-align: center;
+    box-shadow:
+        0 0 60px rgba(255,232,0,0.08),
+        0 32px 64px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,232,0,0.1);
+    max-width: 560px;
+    width: 90vw;
+    }
+
+    .sabers {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    }
+    .saber {
+    width: 6px;
+    height: 60px;
+    border-radius: 3px;
+    animation: glow-saber 2s ease-in-out infinite alternate;
+    }
+    .saber.blue  { background: #40b0ff; box-shadow: 0 0 8px #40b0ff, 0 0 20px #0080ff; }
+    .saber.red   { background: #ff4040; box-shadow: 0 0 8px #ff4040, 0 0 20px #cc0000; animation-delay: -1s; }
+    .saber.green { background: #40ff80; box-shadow: 0 0 8px #40ff80, 0 0 20px #00cc40; animation-delay: -0.5s; }
+    @keyframes glow-saber {
+    0%   { opacity: 0.8; transform: scaleY(0.95); }
+    100% { opacity: 1;   transform: scaleY(1.05); }
+    }
+
+    .hero {
+    font-size: 4.5rem;
+    line-height: 1;
+    margin-bottom: 20px;
+    display: block;
+    animation: orbit 6s linear infinite;
+    }
+    @keyframes orbit {
+    0%   { transform: rotate(-8deg) scale(1);    filter: drop-shadow(0 0 8px  rgba(255,232,0,0.5)); }
+    50%  { transform: rotate(8deg)  scale(1.05); filter: drop-shadow(0 0 20px rgba(255,232,0,0.9)); }
+    100% { transform: rotate(-8deg) scale(1);    filter: drop-shadow(0 0 8px  rgba(255,232,0,0.5)); }
+    }
+
+    h1 {
+    font-size: clamp(2rem, 5.5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #ffe800 0%, #ffaa00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    }
+
+    .crawl {
+    color: rgba(255,232,0,0.55);
+    font-size: 0.78rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    font-style: italic;
+    }
+
+    .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,232,0,0.3), transparent);
+    margin: 22px 0;
+    }
+
+    .faction-row {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 20px;
+    }
+    .faction {
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 4px;
+    }
+    .faction.jedi  { border: 1px solid rgba(64,176,255,0.4); background: rgba(64,176,255,0.06); }
+    .faction.sith  { border: 1px solid rgba(255,64,64,0.4);  background: rgba(255,64,64,0.06);  }
+    .faction-name {
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    }
+    .faction.jedi  .faction-name { color: #40b0ff; }
+    .faction.sith  .faction-name { color: #ff4040; }
+    .faction-emoji { font-size: 1.6rem; }
+
+    .tags {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    }
+    .tag {
+    padding: 4px 12px;
+    border-radius: 4px;
+    background: rgba(255,232,0,0.07);
+    border: 1px solid rgba(255,232,0,0.2);
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+    }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+
+<div class="card">
+    <div class="sabers">
+    <div class="saber blue"></div>
+    <div class="saber red"></div>
+    <div class="saber green"></div>
+    </div>
+
+    <span class="hero">🌟</span>
+    <h1>Hello, World!</h1>
+    <p class="crawl">A long time ago in a cluster far, far away&hellip;</p>
+
+    <div class="faction-row">
+    <div class="faction jedi">
+        <div class="faction-name">Jedi Order</div>
+        <div class="faction-emoji">⚔️</div>
+    </div>
+    <div class="faction sith">
+        <div class="faction-name">Sith Empire</div>
+        <div class="faction-emoji">👾</div>
+    </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="tags">
+    <span class="tag">namespace: hello-world</span>
+    <span class="tag">app: starwars</span>
+    <span class="tag">✓ running</span>
+    </div>
+</div>
+</body>
+</html>
