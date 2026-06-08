@@ -1,0 +1,14 @@
+[http]
+  [http.routers]
+    [http.routers.proxy]
+      entryPoints = ["main", "main_secure"]
+      service     = "proxy"
+      rule        = "Host(`proxy.magnaloca.com`)"
+      middlewares = ["main_https", "hsts", "ipwhitelist", "dashboard-auth"]
+      tls         = true
+
+  [http.services]
+    [http.services.proxy]
+      [http.services.proxy.loadBalancer]
+        [[http.services.proxy.loadBalancer.servers]]
+          url = "http://127.0.0.1:8080"

@@ -58,6 +58,65 @@ variable "dmz_vlan_ip" {
   type        = string
 }
 
+variable "traefik_mgmt_ip" {
+  description = "IP management du nœud kube (cible NAT SNS)"
+  type        = string
+  default     = "10.255.255.54"
+}
+
+variable "traefik_cloudflare_api_token" {
+  description = "Token Cloudflare DNS pour ACME (Zone:DNS:Edit)"
+  type        = string
+  sensitive   = true
+}
+
+variable "traefik_acme_host_data_path" {
+  description = "Chemin persistance acme.json sur le nœud hôte"
+  type        = string
+  default     = "/opt/traefik-acme"
+}
+
+variable "traefik_dashboard_htpasswd" {
+  description = "Credentials dashboard au format htpasswd (générer avec : htpasswd -nB user password)"
+  type        = string
+  sensitive   = true
+}
+
+# ========================================
+# Management — Teleport
+# ========================================
+
+variable "teleport_vlan_ip" {
+  description = "IP exposée pour Teleport sur le VLAN management (10.255.255.x)"
+  type        = string
+}
+
+variable "teleport_host_data_path" {
+  description = "Chemin persistance Teleport sur le nœud hôte"
+  type        = string
+  default     = "/opt/teleport"
+}
+
+variable "coder_postgres_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "coder_access_url" {
+  type    = string
+  default = "https://coder.magnaloca.com"
+}
+
+variable "coder_wildcard_access_url" {
+  type    = string
+  default = "*--apps.coder.magnaloca.com"
+}
+
+variable "coder_host_data_path" {
+  type    = string
+  default = "/opt/coder-postgres"
+}
+
 # ========================================
 # Perso Stack
 # ========================================

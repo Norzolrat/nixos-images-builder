@@ -1,0 +1,31 @@
+[http]
+  [http.routers]
+    [http.routers.teleport]
+      entryPoints = ["main", "main_secure"]
+      service     = "teleport"
+      rule        = "Host(`teleport.magnaloca.com`)"
+      middlewares = ["main_https", "hsts"]
+      tls         = true
+
+    # Wildcard — domaines explicites pour ACME
+    [http.routers.teleport-wildcard]
+      entryPoints = ["main_secure"]
+      rule        = "HostRegexp(`[a-z0-9-]+\\.teleport\\.magnaloca\\.com`)"
+      service     = "teleport"
+      middlewares = ["hsts"]
+      [http.routers.teleport-wildcard.tls]
+        certResolver = "letsencrypt"
+        [[http.routers.teleport-wildcard.tls.domains]]
+          main = "teleport.magnaloca.com"
+          sans = ["*.teleport.magnaloca.com"]
+
+  [http.services]
+    [http.services.teleport]
+      [http.services.teleport.loadBalancer]
+        serversTransport = "skipVerify"
+        [[http.services.teleport.loadBalancer.servers]]
+          url = "https://10.255.255.251:3080"
+
+  [http.serversTransports]
+    [http.serversTransports.skipVerify]
+      insecureSkipVerify = true

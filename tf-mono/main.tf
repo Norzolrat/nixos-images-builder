@@ -150,7 +150,19 @@ module "deployment" {
 
   cloudflare_tunnel_token = var.cloudflare_tunnel_token
   cloudflared_image       = var.cloudflared_image
-  dmz_vlan_ip             = var.vlan1_external_ip
+  dmz_vlan_ip                  = var.vlan1_external_ip
+  traefik_mgmt_ip              = var.traefik_mgmt_ip
+  traefik_cloudflare_api_token = var.traefik_cloudflare_api_token
+  traefik_acme_host_data_path  = var.traefik_acme_host_data_path
+  traefik_dashboard_htpasswd   = var.traefik_dashboard_htpasswd
+
+  teleport_vlan_ip        = var.teleport_vlan_ip
+  teleport_host_data_path = var.teleport_host_data_path
+
+  coder_postgres_password   = var.coder_postgres_password
+  coder_access_url          = var.coder_access_url
+  coder_wildcard_access_url = var.coder_wildcard_access_url
+  coder_host_data_path      = var.coder_host_data_path
 
   perso_vlan_ip                  = var.perso_vlan_ip
   perso_host_data_path           = var.perso_host_data_path

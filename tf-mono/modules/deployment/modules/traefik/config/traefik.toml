@@ -1,0 +1,59 @@
+[accessLog]
+  filePath = "/var/log/traefik/access.log"
+  format   = "json"
+  [accessLog.fields]
+    defaultMode = "keep"
+    [accessLog.fields.headers]
+      defaultMode = "drop"
+      [accessLog.fields.headers.names]
+        "User-Agent"      = "keep"
+        "X-Forwarded-For" = "keep"
+        "X-Real-Ip"       = "keep"
+
+[api]
+  insecure  = true
+  dashboard = true
+  debug     = true
+
+[log]
+  level    = "INFO"
+  filePath = "/var/log/traefik/traefik.log"
+
+[entryPoints]
+  [entryPoints.main]
+    address = ":80"
+    [entryPoints.main.http.redirections]
+      [entryPoints.main.http.redirections.entryPoint]
+        to     = "main_secure"
+        scheme = "https"
+
+  [entryPoints.main_secure]
+    address = ":443"
+    # Résolveur ACME par défaut pour tous les routers HTTPS
+    [entryPoints.main_secure.http.tls]
+      certResolver = "letsencrypt"
+
+  [entryPoints.teleport_ssh]
+    address = ":3023"
+
+  [entryPoints.teleport_tunnel]
+    address = ":3024"
+
+  [entryPoints.teleport_kube]
+    address = ":3026"
+
+[providers]
+  [providers.file]
+    directory = "/etc/traefik/dynamic"
+    watch     = true
+
+# ── Let's Encrypt via DNS challenge Cloudflare ────────────────────
+# CF_DNS_API_TOKEN est injecté depuis le Secret kubernetes traefik-cloudflare
+[certificatesResolvers]
+  [certificatesResolvers.letsencrypt]
+    [certificatesResolvers.letsencrypt.acme]
+      email   = "nzes2023@gmail.com"
+      storage = "/etc/traefik/acme/acme.json"
+      [certificatesResolvers.letsencrypt.acme.dnsChallenge]
+        provider  = "cloudflare"
+        resolvers = ["1.1.1.1:53", "8.8.8.8:53"]

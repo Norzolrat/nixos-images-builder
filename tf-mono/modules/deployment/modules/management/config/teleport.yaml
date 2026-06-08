@@ -1,0 +1,74 @@
+version: v3
+
+teleport:
+  nodename: teleport.magnaloca.com
+  data_dir: /var/lib/teleport
+  log:
+    output: stderr
+    severity: INFO
+
+auth_service:
+  enabled: true
+  cluster_name: teleport.magnaloca.com
+  listen_addr: 0.0.0.0:3025
+
+proxy_service:
+  enabled: true
+  # Web UI → via Cloudflare Tunnel
+  public_addr: teleport.magnaloca.com:443
+  web_listen_addr: 0.0.0.0:3080
+
+  # tsh + agents → TCP passthrough Traefik (bastion.toml)
+  listen_addr: 0.0.0.0:3023
+  ssh_public_addr: bastion.magnaloca.com:3023
+  tunnel_listen_addr: 0.0.0.0:3024
+  tunnel_public_addr: bastion.magnaloca.com:3024
+  kube_listen_addr: 0.0.0.0:3026
+  kube_public_addr: bastion.magnaloca.com:3026
+
+  # Teleport gère son propre certificat (Traefik utilise insecureSkipVerify)
+  https_keypairs: []
+
+app_service:
+  enabled: true
+  apps:
+    - name: pve
+      description: "Proxmox VE"
+      uri: https://10.255.255.250:8006
+      insecure_skip_verify: true
+      labels:
+        env: site-a
+
+    - name: sns-site-a
+      description: "Firewall SNS Magnaloca"
+      uri: https://10.255.255.254
+      insecure_skip_verify: true
+      labels:
+        env: site-a
+
+    - name: sns-site-b
+      description: "Firewall SNS Zolbinata"
+      uri: https://192.168.51.254
+      insecure_skip_verify: true
+      labels:
+        env: site-b
+
+    - name: pbs
+      description: "Proxmox Backup Server"
+      uri: https://192.168.51.251:8007
+      insecure_skip_verify: true
+      labels:
+        env: site-b
+
+ssh_service:
+  enabled: false
+
+# Teleport tourne dans Kubernetes → utilise le service account in-cluster
+# Pas besoin de kubeconfig externe.
+kubernetes_service:
+  enabled: true
+  listen_addr: 0.0.0.0:3027
+  kube_cluster_name: nixos-kube
+
+db_service:
+  enabled: false

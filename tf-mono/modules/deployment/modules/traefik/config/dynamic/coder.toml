@@ -1,0 +1,36 @@
+[http]
+  [http.routers]
+    [http.routers.coder-http]
+      entryPoints = ["main"]
+      rule        = "Host(`coder.magnaloca.com`)"
+      middlewares = ["main_https"]
+      service     = "coder"
+
+    [http.routers.coder]
+      entryPoints = ["main_secure"]
+      service     = "coder"
+      rule        = "Host(`coder.magnaloca.com`)"
+      middlewares = ["hsts", "coder-headers"]
+      tls         = true
+
+    # Wildcard — domaines explicites pour que ACME génère *.coder.magnaloca.com
+    [http.routers.coder-wildcard]
+      entryPoints = ["main_secure"]
+      rule        = "HostRegexp(`[a-z0-9-]+\\.coder\\.magnaloca\\.com`)"
+      service     = "coder"
+      middlewares = ["hsts", "coder-headers"]
+      [http.routers.coder-wildcard.tls]
+        certResolver = "letsencrypt"
+        [[http.routers.coder-wildcard.tls.domains]]
+          main = "coder.magnaloca.com"
+          sans = ["*.coder.magnaloca.com"]
+
+  [http.middlewares]
+    [http.middlewares.coder-headers.headers]
+      customRequestHeaders.X-Forwarded-Proto = "https"
+
+  [http.services]
+    [http.services.coder]
+      [http.services.coder.loadBalancer]
+        [[http.services.coder.loadBalancer.servers]]
+          url = "http://coder.management.svc.cluster.local:3000"

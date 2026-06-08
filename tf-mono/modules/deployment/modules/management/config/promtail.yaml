@@ -1,0 +1,54 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /run/promtail/positions.yaml
+
+clients:
+  - url: http://loki.management.svc.cluster.local:3100/loki/api/v1/push
+    timeout: 10s
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+
+scrape_configs:
+  # ── Logs de tous les pods Kubernetes ─────────────────────────────
+  - job_name: kubernetes-pods
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: kubernetes-pods
+          __path__: /var/log/pods/*/*/*.log
+    pipeline_stages:
+      - cri: {}
+    relabel_configs:
+      - source_labels: [__path__]
+        regex: '/var/log/pods/([^_]+)_[^_]+_[^/]+/[^/]+/.*'
+        target_label: namespace
+        replacement: '$1'
+      - source_labels: [__path__]
+        regex: '/var/log/pods/[^_]+_([^_]+)_[^/]+/[^/]+/.*'
+        target_label: pod
+        replacement: '$1'
+      - source_labels: [__path__]
+        regex: '/var/log/pods/[^_]+_[^_]+_[^/]+/([^/]+)/.*'
+        target_label: container
+        replacement: '$1'
+
+  # ── Journal systemd (kubelet, containerd, kernel…) ────────────────
+  - job_name: systemd-journal
+    journal:
+      json:    false
+      max_age: 12h
+      labels:
+        job: systemd
+    relabel_configs:
+      - source_labels: [__journal__systemd_unit]
+        target_label: unit
+      - source_labels: [__journal__hostname]
+        target_label: host
+      - source_labels: [__journal__priority]
+        target_label: priority

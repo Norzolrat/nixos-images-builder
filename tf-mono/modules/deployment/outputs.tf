@@ -10,6 +10,10 @@ output "llm_stack_info" {
   value = module.llm_stack.stack_info
 }
 
+output "management_info" {
+  value = module.management.info
+}
+
 output "deployment_info" {
   description = "Résumé des déploiements hello-world"
   value       = <<-EOT

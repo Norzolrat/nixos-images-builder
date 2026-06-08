@@ -1,0 +1,20 @@
+[http.middlewares]
+  [http.middlewares.ipwhitelist]
+    [http.middlewares.ipwhitelist.ipAllowList]
+      sourceRange = ["0.0.0.0/0"]
+
+  [http.middlewares.main_https]
+    [http.middlewares.main_https.redirectScheme]
+      scheme    = "https"
+      permanent = true
+
+  [http.middlewares.hsts]
+    [http.middlewares.hsts.headers]
+      stsSeconds          = 31536000
+      stsIncludeSubdomains = true
+      stsPreload          = true
+      forceSTSHeader      = true
+
+  [http.middlewares.dashboard-auth]
+    [http.middlewares.dashboard-auth.basicAuth]
+      usersFile = "/etc/traefik/auth/users"

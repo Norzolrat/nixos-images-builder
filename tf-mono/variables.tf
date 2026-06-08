@@ -256,6 +256,31 @@ variable "vlan1_external_ip" {
   default     = "10.0.1.200"
 }
 
+variable "traefik_mgmt_ip" {
+  description = "IP management du nœud kube — cible NAT SNS firewall"
+  type        = string
+  default     = "10.255.255.54"
+}
+
+variable "traefik_cloudflare_api_token" {
+  description = "Token Cloudflare DNS pour ACME Let's Encrypt (permission Zone:DNS:Edit)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "traefik_acme_host_data_path" {
+  description = "Chemin persistance acme.json sur le nœud hôte"
+  type        = string
+  default     = "/opt/traefik-acme"
+}
+
+variable "traefik_dashboard_htpasswd" {
+  description = "Credentials dashboard Traefik au format htpasswd (générer avec : htpasswd -nB user password)"
+  type        = string
+  sensitive   = true
+}
+
 variable "vlan5_external_ip" {
   description = "IP du VLAN pour le thème Star Wars ⚔️ — VLAN perso (sans le masque CIDR)"
   type        = string
@@ -266,6 +291,43 @@ variable "vlan10_external_ip" {
   description = "IP du VLAN pour le thème Matrix 💊 — VLAN ai (sans le masque CIDR)"
   type        = string
   default     = "10.0.10.200"
+}
+
+# ========================================
+# Management — Teleport
+# ========================================
+
+variable "teleport_vlan_ip" {
+  description = "IP exposée pour Teleport sur le VLAN management"
+  type        = string
+  default     = "10.255.255.251"
+}
+
+variable "teleport_host_data_path" {
+  description = "Chemin persistance Teleport sur le nœud hôte"
+  type        = string
+  default     = "/opt/teleport"
+}
+
+variable "coder_postgres_password" {
+  type      = string
+  sensitive = true
+  default   = "changeme-replace-with-secure-password"
+}
+
+variable "coder_access_url" {
+  type    = string
+  default = "https://coder.magnaloca.com"
+}
+
+variable "coder_wildcard_access_url" {
+  type    = string
+  default = "*--apps.coder.magnaloca.com"
+}
+
+variable "coder_host_data_path" {
+  type    = string
+  default = "/opt/coder-postgres"
 }
 
 # ========================================

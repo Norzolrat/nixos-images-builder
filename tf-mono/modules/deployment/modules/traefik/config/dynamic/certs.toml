@@ -1,0 +1,3 @@
+# Les certificats sont maintenant gérés par Traefik via ACME (Let's Encrypt)
+# avec DNS challenge Cloudflare — voir certificatesResolvers dans traefik.toml.
+# Ce fichier n'est plus utilisé pour les certs statiques.

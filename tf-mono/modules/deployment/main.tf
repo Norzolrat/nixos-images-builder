@@ -22,8 +22,12 @@ module "cloudflare" {
 module "traefik" {
   source = "./modules/traefik"
 
-  namespace   = "traefik"
-  dmz_vlan_ip = var.dmz_vlan_ip
+  namespace            = "traefik"
+  dmz_vlan_ip          = var.dmz_vlan_ip
+  mgmt_ip              = var.traefik_mgmt_ip
+  cloudflare_api_token = var.traefik_cloudflare_api_token
+  acme_host_data_path  = var.traefik_acme_host_data_path
+  dashboard_htpasswd   = var.traefik_dashboard_htpasswd
 }
 
 module "perso" {
@@ -38,6 +42,19 @@ module "perso" {
   passbolt_gpg_public_key  = var.perso_passbolt_gpg_public_key
   passbolt_gpg_private_key = var.perso_passbolt_gpg_private_key
   ghostfolio_secret        = var.perso_ghostfolio_secret
+}
+
+module "management" {
+  source = "./modules/management"
+
+  namespace               = "management"
+  teleport_vlan_ip        = var.teleport_vlan_ip
+  teleport_host_data_path = var.teleport_host_data_path
+
+  coder_postgres_password   = var.coder_postgres_password
+  coder_access_url          = var.coder_access_url
+  coder_wildcard_access_url = var.coder_wildcard_access_url
+  coder_host_data_path      = var.coder_host_data_path
 }
 
 module "llm_stack" {

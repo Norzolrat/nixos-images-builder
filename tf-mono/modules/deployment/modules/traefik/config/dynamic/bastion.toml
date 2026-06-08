@@ -1,0 +1,38 @@
+[tcp]
+  [tcp.routers]
+    [tcp.routers.teleport-ssh]
+      entryPoints = ["teleport_ssh"]
+      rule        = "HostSNI(`*`)"
+      service     = "teleport-ssh-svc"
+      [tcp.routers.teleport-ssh.tls]
+        passthrough = true
+
+    [tcp.routers.teleport-tunnel]
+      entryPoints = ["teleport_tunnel"]
+      rule        = "HostSNI(`*`)"
+      service     = "teleport-tunnel-svc"
+      [tcp.routers.teleport-tunnel.tls]
+        passthrough = true
+
+    [tcp.routers.teleport-kube]
+      entryPoints = ["teleport_kube"]
+      rule        = "HostSNI(`*`)"
+      service     = "teleport-kube-svc"
+      [tcp.routers.teleport-kube.tls]
+        passthrough = true
+
+  [tcp.services]
+    [tcp.services.teleport-ssh-svc]
+      [tcp.services.teleport-ssh-svc.loadBalancer]
+        [[tcp.services.teleport-ssh-svc.loadBalancer.servers]]
+          address = "10.255.255.251:3023"
+
+    [tcp.services.teleport-tunnel-svc]
+      [tcp.services.teleport-tunnel-svc.loadBalancer]
+        [[tcp.services.teleport-tunnel-svc.loadBalancer.servers]]
+          address = "10.255.255.251:3024"
+
+    [tcp.services.teleport-kube-svc]
+      [tcp.services.teleport-kube-svc.loadBalancer]
+        [[tcp.services.teleport-kube-svc.loadBalancer.servers]]
+          address = "10.255.255.251:3026"
