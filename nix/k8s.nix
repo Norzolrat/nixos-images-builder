@@ -83,7 +83,17 @@
   # ============================================================
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 22 6443 2379 2380 10250 10257 10259 30000 179 5473 9999 ];
+    # "loose" : accepte les paquets inter-VLAN arrivant sur eth1 (DMZ) même si
+    # la route retour passe par eth0 — nécessaire pour que 10.0.1.200 soit
+    # joignable depuis vlan_mgmt et internet (le service dmz-policy-routing
+    # assure ensuite que les réponses repartent bien par eth1).
+    checkReversePath = "loose";
+    allowedTCPPorts = [ 22 6443 2379 2380 10250 10257 10259 30000 179 5473 9999
+      # Traefik — accessible via eth0 (cible NAT SNS) et eth1 (VLAN dmz)
+      80 443 8080
+      # Teleport — TCP passthrough bastion
+      3023 3024 3026
+    ];
     allowedUDPPorts = [ 4789 ];
   };
 
@@ -127,5 +137,50 @@
       RestartSec = 10;
     };
     # Pas de wantedBy : kubeadm démarre/arrête kubelet lui-même lors du init
+  };
+
+  # ============================================================
+  # Policy routing eth1 (VLAN dmz) — retour symétrique
+  # Sans ça, les réponses à des clients inter-VLAN (vlan_mgmt,
+  # internet via SNS) partiraient par eth0 avec la mauvaise IP
+  # source, cassant le handshake TCP vers 10.0.1.200.
+  # ============================================================
+  systemd.services.vlan-policy-routing = {
+    description = "Policy routing VLAN NICs (eth1…) — symmetric return path";
+    after    = [ "network-online.target" ];
+    wants    = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    path     = with pkgs; [ iproute2 gawk ];
+    serviceConfig = {
+      Type            = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "vlan-policy-routing" ''
+        set -eu
+
+        # Appliquer le policy routing sur chaque VLAN NIC (eth1…eth9)
+        # Table N+200 pour ethN (eth1→201, eth2→202, …)
+        for ETH in eth1 eth2 eth3 eth4 eth5 eth6 eth7 eth8 eth9; do
+          ip link show "$ETH" >/dev/null 2>&1 || continue
+
+          IP=$(ip -4 addr show dev "$ETH" 2>/dev/null \
+               | awk '/inet /{split($2,a,"/"); print a[1]; exit}')
+          [ -z "$IP" ] && continue
+
+          IDX=$(echo "$ETH" | tr -d 'eth')
+          TABLE=$((IDX + 200))
+
+          GW=$(ip route show dev "$ETH" | awk '/default/{print $3; exit}')
+          [ -z "$GW" ] && GW=$(echo "$IP" | awk -F. '{print $1"."$2"."$3".1"}')
+
+          SUBNET=$(ip -4 addr show dev "$ETH" | awk '/inet /{print $2; exit}')
+
+          ip route replace "$SUBNET" dev "$ETH"          table "$TABLE"
+          ip route replace default   via "$GW" dev "$ETH" table "$TABLE"
+          ip rule  add    from "$IP/32" table "$TABLE" priority "$TABLE" 2>/dev/null || true
+
+          echo "vlan-policy-routing: $ETH — $IP via $GW (table $TABLE)"
+        done
+      '';
+    };
   };
 }
