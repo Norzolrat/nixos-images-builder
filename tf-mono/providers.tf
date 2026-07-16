@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = ">= 2.23.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.12.0"
+    }
   }
 }
 
@@ -28,6 +32,13 @@ provider "proxmox" {
 }
 
 provider "kubernetes" {
-  config_path            = var.kubeconfig_path
-  insecure               = true
+  config_path = var.kubeconfig_path
+  insecure    = true
+}
+
+provider "helm" {
+  kubernetes = {
+    config_path = var.kubeconfig_path
+    insecure    = true
+  }
 }

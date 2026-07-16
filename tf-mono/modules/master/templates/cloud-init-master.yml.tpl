@@ -9,6 +9,27 @@ write_files:
     content: "${vm_hostname}\n"
     permissions: '0644'
 
+  # Fichiers NixOS sources — nécessaires pour que nixos-rebuild switch fonctionne sur la VM
+  - path: /etc/nixos/configuration.nix
+    permissions: '0644'
+    encoding: b64
+    content: ${configuration_nix_b64}
+
+  - path: /etc/nixos/k8s.nix
+    permissions: '0644'
+    encoding: b64
+    content: ${k8s_nix_b64}
+
+  - path: /etc/nixos/gpu-amd.nix
+    permissions: '0644'
+    encoding: b64
+    content: ${gpu_amd_nix_b64}
+
+  - path: /etc/nixos/machine.nix
+    permissions: '0644'
+    encoding: b64
+    content: ${machine_nix_b64}
+
   - path: /root/k8s-bootstrap.sh
     permissions: '0755'
     content: |
@@ -67,6 +88,15 @@ runcmd:
   - rm -f /etc/ssh/ssh_host_*
   - ssh-keygen -A
   - systemctl restart sshd
+  # Renommer les NICs par position (insensible aux noms prédictifs ens18/ens19)
+  # On capture FIRST et SECOND avant tout rename pour éviter les courses
+  - >-
+    FIRST=$(ip -o link show | awk -F': ' '{print $2}' | grep -v '^lo$' | head -1);
+    SECOND=$(ip -o link show | awk -F': ' '{print $2}' | grep -v '^lo$' | sed -n '2p');
+    [ -n "$FIRST"  ] && [ "$FIRST"  != "eth0" ] && ip link set "$FIRST"  name eth0 || true;
+    [ -n "$SECOND" ] && [ "$SECOND" != "eth1" ] && ip link set "$SECOND" name eth1 || true
+  - /run/current-system/sw/bin/nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix 2>&1 | tee /root/nixos-rebuild.log || echo "[WARNING] nixos-rebuild switch échoué — check /root/nixos-rebuild.log"
+  - sleep 3
   - /root/k8s-bootstrap.sh 2>&1 | tee /root/k8s-bootstrap.log
 
 final_message: |
@@ -75,4 +105,5 @@ final_message: |
   Join command : cat /root/kubeadm-join.sh
   Kubeconfig   : scp ${vm_hostname}:~/kubeconfig ~/.kube/config
   Bootstrap log: /root/k8s-bootstrap.log
+  NixOS rebuild: /root/nixos-rebuild.log
   =====================================================

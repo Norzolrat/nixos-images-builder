@@ -209,11 +209,16 @@ resource "kubernetes_service_v1" "traefik" {
     name      = "traefik"
     namespace = kubernetes_namespace_v1.this.metadata[0].name
     labels    = { app = "traefik", managed-by = "terraform" }
+    annotations = {
+      # MetalLB L2 : IP fixe depuis le pool "dmz"
+      "metallb.universe.tf/loadBalancerIPs" = var.dmz_vlan_ip
+    }
   }
 
   spec {
+    type         = "LoadBalancer"
     selector     = { app = "traefik" }
-    external_ips = [var.dmz_vlan_ip, var.mgmt_ip]
+    external_ips = [var.mgmt_ip]  # accès mgmt pour le NAT SNS
 
     port {
       name        = "http"

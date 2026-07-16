@@ -1,5 +1,10 @@
 { config, pkgs, lib, ... }:
 {
+  imports = [
+    # Config VM-spécifique injectée par Terraform/cloud-init au déploiement
+    ./machine.nix
+  ];
+
   # ============================================================
   # Boot / initrd
   # ============================================================
@@ -36,22 +41,6 @@
   services.cloud-init = {
     enable = true;
     network.enable = true;
-  #    settings = {
-  #      datasource_list = [ "NoCloud" "ConfigDrive" "None" ];
-  #      datasource = {
-  #        NoCloud = {
-  #          seedfrom = "/dev/sr0";
-  #        };
-  #      };
-  #      system_info = {
-  #        default_user = {
-  #          name = "user";
-  #          groups = [ "wheel" ];
-  #          sudo = "ALL=(ALL) NOPASSWD:ALL";
-  #          shell = "/run/current-system/sw/bin/fish";
-  #        };
-  #      };
-  #    };
   };
 
   # ============================================================
@@ -189,4 +178,12 @@
     "nix-command"
     "flakes"
   ];
+
+  # Permet à nixos-rebuild switch de fonctionner dans la VM sans accès internet
+  # en utilisant le nixpkgs déjà présent dans le store (buildé avec l'image).
+  nix.nixPath = [ "nixpkgs=${pkgs.path}" ];
+  nix.registry.nixpkgs.to = {
+    type = "path";
+    path = "${pkgs.path}";
+  };
 }

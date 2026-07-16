@@ -7,6 +7,33 @@ terraform {
   }
 }
 
+locals {
+  master_ip = split("/", var.vm_ip)[0]
+
+  vlan_sub = [
+    for idx, vlan in var.vlan_subinterfaces : {
+      name        = vlan.name
+      vlan_id     = vlan.vlan_id
+      ip          = vlan.ip
+      file_prefix = format("%02d", 20 + idx)
+    }
+  ]
+
+  machine_nix = templatefile("${path.module}/templates/machine.nix.tpl", {
+    vm_hostname        = var.vm_hostname
+    timezone           = var.timezone
+    vm_ip              = var.vm_ip
+    vm_gateway         = var.vm_gateway
+    vm_nameserver      = var.vm_nameserver
+    vlan_subinterfaces = local.vlan_sub
+  })
+
+  # Fichiers NixOS sources — injectés sur la VM pour permettre nixos-rebuild switch
+  configuration_nix_b64 = base64encode(file("${path.root}/../nix/configuration.nix"))
+  k8s_nix_b64           = base64encode(file("${path.root}/../nix/k8s.nix"))
+  gpu_amd_nix_b64       = base64encode(file("${path.root}/../nix/gpu-amd.nix"))
+}
+
 # ========================================
 # Upload du cloud-init custom sur Proxmox
 # ========================================
@@ -18,10 +45,17 @@ resource "proxmox_virtual_environment_file" "cloud_init_config" {
 
   source_raw {
     data = templatefile("${path.module}/templates/cloud-init-master.yml.tpl", {
-      vm_hostname      = var.vm_hostname
-      timezone         = var.timezone
-      pod_network_cidr = var.pod_network_cidr
-      calico_version   = var.calico_version
+      vm_hostname           = var.vm_hostname
+      timezone              = var.timezone
+      pod_network_cidr      = var.pod_network_cidr
+      calico_version        = var.calico_version
+      vm_ip                 = var.vm_ip
+      vm_gateway            = var.vm_gateway
+      vm_nameserver         = var.vm_nameserver
+      machine_nix_b64       = base64encode(local.machine_nix)
+      configuration_nix_b64 = local.configuration_nix_b64
+      k8s_nix_b64           = local.k8s_nix_b64
+      gpu_amd_nix_b64       = local.gpu_amd_nix_b64
     })
     file_name = "cloud-init-kubeadm-master.yml"
   }
@@ -56,7 +90,7 @@ resource "proxmox_virtual_environment_vm" "master" {
   cpu {
     cores   = var.vm_cores
     sockets = 1
-    type    = "host"
+    type    = "x86-64-v3"
   }
 
   scsi_hardware = "virtio-scsi-single"
@@ -65,7 +99,7 @@ resource "proxmox_virtual_environment_vm" "master" {
     datastore_id = var.proxmox_storage
     interface    = "scsi0"
     size         = var.vm_disk_size
-    file_format  = "qcow2"
+    file_format  = var.vm_disk_format
     file_id      = var.nixos_image_file_id
   }
 
@@ -89,13 +123,9 @@ resource "proxmox_virtual_environment_vm" "master" {
     model  = "virtio"
   }
 
-  dynamic "network_device" {
-    for_each = var.vlan_nics
-    content {
-      bridge  = network_device.value.bridge
-      model   = "virtio"
-      vlan_id = network_device.value.vlan_id
-    }
+  network_device {
+    bridge = var.trunk_bridge
+    model  = "virtio"
   }
 
   serial_device {}
@@ -112,15 +142,6 @@ resource "proxmox_virtual_environment_vm" "master" {
       ipv4 {
         address = var.vm_ip
         gateway = var.vm_gateway
-      }
-    }
-
-    dynamic "ip_config" {
-      for_each = var.vlan_nics
-      content {
-        ipv4 {
-          address = ip_config.value.ip
-        }
       }
     }
 

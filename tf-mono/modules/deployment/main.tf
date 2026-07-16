@@ -1,4 +1,15 @@
 # ════════════════════════════════════════
+#  MetalLB — LoadBalancer L2 (doit être déployé en premier)
+# ════════════════════════════════════════
+
+module "metallb" {
+  source = "./modules/metallb"
+
+  metallb_version    = var.metallb_version
+  vlan_subinterfaces = var.vlan_subinterfaces
+}
+
+# ════════════════════════════════════════
 #  Sous-modules hello-world (namespace propre à chacun)
 # ════════════════════════════════════════
 

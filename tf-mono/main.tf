@@ -37,11 +37,13 @@ module "master" {
   vm_memory           = var.vm_memory
   vm_cores            = var.vm_cores
   vm_disk_size        = var.vm_disk_size
+  vm_disk_format      = var.vm_disk_format
   vm_tags             = concat(var.vm_tags, ["master"])
 
-  network_bridge = var.network_bridge
-  vlan_nics      = var.vlan_nics
-  vm_ip          = var.vm_ip
+  network_bridge     = var.network_bridge
+  trunk_bridge       = var.trunk_bridge
+  vlan_subinterfaces = var.vlan_subinterfaces
+  vm_ip              = var.vm_ip
   vm_gateway     = var.vm_gateway
   vm_nameserver  = var.vm_nameserver
 
@@ -141,6 +143,9 @@ resource "null_resource" "wait_kubernetes_ready" {
 
 module "deployment" {
   source = "./modules/deployment"
+
+  metallb_version    = "0.14.9"
+  vlan_subinterfaces = var.vlan_subinterfaces
 
   replicas             = var.deployment_replicas
   nginx_image          = var.deployment_nginx_image

@@ -34,7 +34,7 @@ endif
 
 destroy:
 	terraform state rm module.deployment || true
-	terraform destroy
+	terraform destroy -target=module.master
 
 init:
 	terraform init

@@ -75,6 +75,17 @@ resource "kubernetes_deployment_v1" "loki" {
           effect   = "NoSchedule"
         }
 
+        init_container {
+          name    = "init-loki"
+          image   = "busybox:1.36"
+          command = ["sh", "-c", "mkdir -p /var/loki/chunks /var/loki/rules /var/loki/compactor && chown -R 10001:10001 /var/loki"]
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/var/loki"
+          }
+        }
+
         container {
           name  = "loki"
           image = var.loki_image

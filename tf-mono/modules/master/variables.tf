@@ -52,6 +52,12 @@ variable "vm_disk_size" {
   default     = 20
 }
 
+variable "vm_disk_format" {
+  description = "Format du disque VM — raw pour ZFS/LVM, qcow2 pour ext4/NFS"
+  type        = string
+  default     = "raw"
+}
+
 variable "vm_tags" {
   type    = list(string)
   default = ["nixos", "kubeadm", "master"]
@@ -76,12 +82,18 @@ variable "network_bridge" {
   default = "vmbr0"
 }
 
-variable "vlan_nics" {
-  description = "NICs VLAN supplémentaires (vmbr1 + vlan_id par VLAN)"
+variable "trunk_bridge" {
+  description = "Bridge trunk Proxmox — passe tous les VLANs sans tag (eth1 dans la VM)"
+  type        = string
+  default     = "vmbr1"
+}
+
+variable "vlan_subinterfaces" {
+  description = "Subinterfaces VLAN sur eth1 (trunk) — MetalLB L2"
   type = list(object({
-    bridge  = string
+    name    = string  # identifiant lisible (dmz, obs, perso, ai)
     vlan_id = number
-    ip      = string
+    ip      = string  # CIDR ex: "10.0.1.200/24"
   }))
   default = []
 }

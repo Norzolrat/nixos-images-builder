@@ -101,20 +101,32 @@ variable "vm_disk_size" {
   default     = 250
 }
 
+variable "vm_disk_format" {
+  description = "Format du disque VM — raw pour ZFS/LVM, qcow2 pour ext4/NFS"
+  type        = string
+  default     = "raw"
+}
+
 # ========================================
 # Configuration Réseau
 # ========================================
 
 variable "network_bridge" {
-  description = "Bridge réseau Proxmox"
+  description = "Bridge réseau Proxmox pour le management (eth0)"
   type        = string
   default     = "mgmt"
 }
 
-variable "vlan_nics" {
-  description = "NICs VLAN sur vmbr1 — un NIC par VLAN, Proxmox pose le tag"
+variable "trunk_bridge" {
+  description = "Bridge trunk Proxmox — passe tous les VLANs sans tag (eth1 dans la VM)"
+  type        = string
+  default     = "vmbr1"
+}
+
+variable "vlan_subinterfaces" {
+  description = "Subinterfaces VLAN sur eth1 — MetalLB L2 (name, vlan_id, ip en CIDR)"
   type = list(object({
-    bridge  = string
+    name    = string
     vlan_id = number
     ip      = string
   }))
@@ -253,7 +265,7 @@ variable "cloudflared_image" {
 variable "vlan1_external_ip" {
   description = "IP du VLAN dmz pour Traefik (ports 80 et 443)"
   type        = string
-  default     = "10.0.1.200"
+  default     = "10.0.15.200"
 }
 
 variable "traefik_mgmt_ip" {

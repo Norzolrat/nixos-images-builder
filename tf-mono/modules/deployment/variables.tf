@@ -1,4 +1,24 @@
 # ========================================
+# MetalLB
+# ========================================
+
+variable "metallb_version" {
+  description = "Version du chart Helm MetalLB"
+  type        = string
+  default     = "0.14.9"
+}
+
+variable "vlan_subinterfaces" {
+  description = "Subinterfaces VLAN transmises à MetalLB pour créer les IPAddressPool"
+  type = list(object({
+    name    = string
+    vlan_id = number
+    ip      = string
+  }))
+  default = []
+}
+
+# ========================================
 # Général
 # ========================================
 
