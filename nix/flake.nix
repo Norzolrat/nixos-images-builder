@@ -10,25 +10,14 @@
     system = "x86_64-linux";
     pkgs   = nixpkgs.legacyPackages.${system};
 
-    # Module requis par make-disk-image.nix : déclare les FS et le bootloader.
-    # Les labels (nixos / ESP) correspondent à ce que make-disk-image crée.
-    diskImageModule = {
-      fileSystems."/" = {
-        device = "/dev/disk/by-label/nixos";
-        fsType = "ext4";
-      };
-      fileSystems."/boot" = {
-        device = "/dev/disk/by-label/ESP";
-        fsType = "vfat";
-      };
-      boot.loader.systemd-boot.enable = true;
-      boot.loader.efi.canTouchEfiVariables = false;
-    };
+    # fileSystems + bootloader (labels nixos/ESP créés par make-disk-image) sont
+    # déjà importés par configuration.nix (./hardware-image.nix) — donc déjà
+    # présents dans chaque modules-*. Rien à ajouter ici pour make-disk-image.
 
     makeQcow2 = modules:
       let cfg = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = modules ++ [ diskImageModule ];
+        inherit modules;
       };
       in import "${nixpkgs}/nixos/lib/make-disk-image.nix" {
         inherit pkgs;

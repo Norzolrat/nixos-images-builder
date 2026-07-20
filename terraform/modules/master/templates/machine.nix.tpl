@@ -2,6 +2,12 @@
 # VM : ${vm_hostname}
 { config, lib, pkgs, ... }:
 {
+  # k8s.nix + gpu-amd.nix : configuration.nix seul (via -I nixos-config=) ne les
+  # importe jamais. Sans ça, "nixos-rebuild switch" sur la VM bascule vers une
+  # config sans containerd/kubelet — l'image de base les avait via flake.nix,
+  # mais un rebuild classique sur la VM ne relit pas flake.nix (jamais copié).
+  imports = [ ./k8s.nix ./gpu-amd.nix ];
+
   networking.hostName = "${vm_hostname}";
   time.timeZone = "${timezone}";
 

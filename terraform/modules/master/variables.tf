@@ -67,10 +67,22 @@ variable "vm_tags" {
 # Configuration GPU passthrough
 # ========================================
 
+variable "enable_gpu" {
+  description = "Attacher le GPU en passthrough (false = VM sans hostpci)"
+  type        = bool
+  default     = true
+}
+
 variable "gpu_pci_mapping" {
   description = "Nom du resource mapping PCI déclaré dans Proxmox (Datacenter → Resource Mappings → PCI Devices)"
   type        = string
   default     = "amd-gpu"
+}
+
+variable "gpu_rombar" {
+  description = "Exposer la ROM du GPU au firmware (false = OVMF n'exécute pas la vBIOS au boot)"
+  type        = bool
+  default     = false
 }
 
 # ========================================

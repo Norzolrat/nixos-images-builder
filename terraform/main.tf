@@ -1,5 +1,10 @@
 locals {
   master_ip = split("/", var.vm_ip)[0]
+
+  # GPU passthrough — interrupteur global.
+  # false = la VM se déploie sans hostpci (contournement du reset bug AMD :
+  # une carte wedgée fige OVMF avant même le boot → plus de réseau ni d'agent).
+  gpu_enabled = var.enable_gpu_passthrough
 }
 
 # ========================================
@@ -50,7 +55,9 @@ module "master" {
   pod_network_cidr = var.pod_network_cidr
   calico_version   = var.calico_version
 
+  enable_gpu      = local.gpu_enabled
   gpu_pci_mapping = var.gpu_pci_mapping
+  gpu_rombar      = var.gpu_rombar
 
   manager_user           = var.manager_user
   manager_ssh_public_key = var.manager_ssh_public_key
@@ -77,8 +84,11 @@ resource "null_resource" "wait_cloud_init" {
   }
 
   provisioner "remote-exec" {
+    # Chemins absolus : une session remote-exec SSH n'est ni un shell de login
+    # ni interactive, donc /etc/set-environment n'est jamais sourcé et
+    # /run/current-system/sw/bin n'est pas dans $PATH (binaire "introuvable").
     inline = [
-      "cloud-init status --wait",
+      "/run/current-system/sw/bin/cloud-init status --wait",
       "while [ ! -f ~/kubeconfig ]; do sleep 10; done",
     ]
   }

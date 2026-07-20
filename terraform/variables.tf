@@ -210,10 +210,22 @@ variable "timezone" {
 # GPU passthrough (master)
 # ========================================
 
+variable "enable_gpu_passthrough" {
+  description = "Attacher le GPU AMD en passthrough. Mettre à false pour déployer sans GPU (ex: carte wedgée par le reset bug — la VM boote alors normalement)"
+  type        = bool
+  default     = true
+}
+
 variable "gpu_pci_mapping" {
   description = "Nom du resource mapping PCI déclaré dans Proxmox (Datacenter → Resource Mappings → PCI Devices)"
   type        = string
   default     = "amd-gpu"
+}
+
+variable "gpu_rombar" {
+  description = "Exposer la ROM du GPU au firmware (rombar). false = OVMF n'exécute pas la vBIOS au boot — évite le gel UEFI quand la carte sort d'un reset raté"
+  type        = bool
+  default     = false
 }
 
 # ========================================

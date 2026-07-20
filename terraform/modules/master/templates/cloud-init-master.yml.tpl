@@ -25,6 +25,11 @@ write_files:
     encoding: b64
     content: ${gpu_amd_nix_b64}
 
+  - path: /etc/nixos/hardware-image.nix
+    permissions: '0644'
+    encoding: b64
+    content: ${hardware_image_nix_b64}
+
   - path: /etc/nixos/machine.nix
     permissions: '0644'
     encoding: b64
@@ -95,7 +100,15 @@ runcmd:
     SECOND=$(ip -o link show | awk -F': ' '{print $2}' | grep -v '^lo$' | sed -n '2p');
     [ -n "$FIRST"  ] && [ "$FIRST"  != "eth0" ] && ip link set "$FIRST"  name eth0 || true;
     [ -n "$SECOND" ] && [ "$SECOND" != "eth1" ] && ip link set "$SECOND" name eth1 || true
-  - /run/current-system/sw/bin/nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix 2>&1 | tee /root/nixos-rebuild.log || echo "[WARNING] nixos-rebuild switch échoué — check /root/nixos-rebuild.log"
+  # NIX_PATH (nixpkgs=...) n'est exporté que par /etc/set-environment, lui-même
+  # sourcé uniquement par les shells de login — pas par ce runcmd non-interactif.
+  # Sans ça, nixos-rebuild échoue sur "file 'nixpkgs/nixos' was not found in
+  # the Nix search path" et machine.nix (VLANs, IP statique) n'est jamais appliqué.
+  - >-
+    source /etc/set-environment &&
+    /run/current-system/sw/bin/nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+    2>&1 | tee /root/nixos-rebuild.log ||
+    echo "[WARNING] nixos-rebuild switch échoué — check /root/nixos-rebuild.log"
   - sleep 3
   - /root/k8s-bootstrap.sh 2>&1 | tee /root/k8s-bootstrap.log
 

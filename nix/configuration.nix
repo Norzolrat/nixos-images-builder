@@ -3,6 +3,8 @@
   imports = [
     # Config VM-spécifique injectée par Terraform/cloud-init au déploiement
     ./machine.nix
+    # Filesystems + bootloader — requis aussi pour nixos-rebuild classique sur la VM
+    ./hardware-image.nix
   ];
 
   # ============================================================
@@ -19,7 +21,7 @@
   system.stateVersion = "25.11";
   # Hostname par défaut dans l'image — cloud-init l'écrase au 1er boot
   # et /var/lib/cloud-hostname le restaure aux boots suivants.
-  networking.hostName = "nixos-template";
+  networking.hostName = lib.mkDefault "nixos-template";
   networking.useDHCP = false; # cloud-init gère le DHCP par interface
   time.timeZone = "Europe/Paris";
   i18n.defaultLocale = "fr_FR.UTF-8";
@@ -123,7 +125,7 @@
       ExecStart = let
         script = pkgs.writeShellScript "cloud-hostname-restore" ''
           if [ -f /var/lib/cloud-hostname ]; then
-            hostname "$(cat /var/lib/cloud-hostname)"
+            ${pkgs.hostname}/bin/hostname "$(cat /var/lib/cloud-hostname)"
           fi
         '';
       in "${script}";

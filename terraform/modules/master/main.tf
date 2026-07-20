@@ -29,9 +29,10 @@ locals {
   })
 
   # Fichiers NixOS sources — injectés sur la VM pour permettre nixos-rebuild switch
-  configuration_nix_b64 = base64encode(file("${path.root}/../nix/configuration.nix"))
-  k8s_nix_b64           = base64encode(file("${path.root}/../nix/k8s.nix"))
-  gpu_amd_nix_b64       = base64encode(file("${path.root}/../nix/gpu-amd.nix"))
+  configuration_nix_b64  = base64encode(file("${path.root}/../nix/configuration.nix"))
+  k8s_nix_b64            = base64encode(file("${path.root}/../nix/k8s.nix"))
+  gpu_amd_nix_b64        = base64encode(file("${path.root}/../nix/gpu-amd.nix"))
+  hardware_image_nix_b64 = base64encode(file("${path.root}/../nix/hardware-image.nix"))
 }
 
 # ========================================
@@ -52,10 +53,11 @@ resource "proxmox_virtual_environment_file" "cloud_init_config" {
       vm_ip                 = var.vm_ip
       vm_gateway            = var.vm_gateway
       vm_nameserver         = var.vm_nameserver
-      machine_nix_b64       = base64encode(local.machine_nix)
-      configuration_nix_b64 = local.configuration_nix_b64
-      k8s_nix_b64           = local.k8s_nix_b64
-      gpu_amd_nix_b64       = local.gpu_amd_nix_b64
+      machine_nix_b64        = base64encode(local.machine_nix)
+      configuration_nix_b64  = local.configuration_nix_b64
+      k8s_nix_b64            = local.k8s_nix_b64
+      gpu_amd_nix_b64        = local.gpu_amd_nix_b64
+      hardware_image_nix_b64 = local.hardware_image_nix_b64
     })
     file_name = "cloud-init-kubeadm-master.yml"
   }
@@ -109,13 +111,17 @@ resource "proxmox_virtual_environment_vm" "master" {
     type              = "4m"
   }
 
-  # Passthrough PCIe — carte AMD via resource mapping Proxmox
-  hostpci {
-    device  = "hostpci0"
-    mapping = var.gpu_pci_mapping
-    pcie    = true
-    rombar  = true
-    xvga    = false
+  # Passthrough PCIe — carte AMD via resource mapping Proxmox.
+  # Désactivable (enable_gpu=false) pour contourner le reset bug AMD.
+  dynamic "hostpci" {
+    for_each = var.enable_gpu ? [1] : []
+    content {
+      device  = "hostpci0"
+      mapping = var.gpu_pci_mapping
+      pcie    = true
+      rombar  = var.gpu_rombar
+      xvga    = false
+    }
   }
 
   network_device {
