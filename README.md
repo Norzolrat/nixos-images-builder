@@ -1,13 +1,55 @@
 # nixos-base-image
 
+> [!WARNING]
+> **Projet arrêté — dépôt non maintenu.**
+>
+> Le développement s'arrête ici et aucune évolution supplémentaire n'est prévue. Le
+> dépôt reste volontairement en ligne comme une relique technique et un retour
+> d'expérience. Ce n'est ni une solution clé en main, ni une configuration dont le
+> fonctionnement est garanti sur un autre matériel.
+
 Repo personnel : construction d'une image NixOS pour Proxmox, et déploiement d'un
 cluster Kubernetes mono-nœud dessus avec ses charges applicatives.
+
+## Pourquoi le projet s'arrête
+
+L'expérience n'est pas un échec complet : l'image a été construite, le cluster kubeadm
+a démarré et le GPU AMD avec ROCm a bien été utilisé depuis Kubernetes sur le matériel
+d'origine. La limite persistante se trouve dans le cycle de vie du passthrough PCIe
+AMD, plus précisément dans la réinitialisation de la carte entre deux utilisations.
+
+Après un reset raté, le GPU peut rester bloqué et figer OVMF avant même que NixOS ne
+démarre. La VM n'a alors ni réseau ni agent QEMU, Terraform finit par expirer en
+attendant SSH et un redémarrage de l'hôte Proxmox est généralement nécessaire. Les
+options `gpu_rombar = false` et `make deploy GPU=false` permettent de contourner ou de
+diagnostiquer le problème, mais ne le résolvent pas durablement. Les détails sont dans
+[docs/gpu-amd.md](docs/gpu-amd.md#le-reset-bug).
+
+Les derniers changements ont surtout retiré les restes des architectures précédentes
+— script VLAN inutilisé, commande de jonction et port hérités des anciens workers —
+sans pouvoir rendre le passthrough AMD suffisamment fiable pour poursuivre ce projet.
+
+## Pourquoi conserver ce dépôt
+
+Ce dépôt restera en ligne comme une relique technique. Il peut encore servir de point
+de départ à celles et ceux qui veulent expérimenter un GPU AMD avec ROCm dans
+Kubernetes sur NixOS, derrière Proxmox. Il documente autant ce qui a fonctionné que
+les contournements et les limites rencontrées ; il ne constitue pas une solution prête
+à déployer ni une promesse de compatibilité avec un autre GPU ou une autre plateforme.
+
+Il contient notamment des exemples pour :
+
+- produire une image NixOS `qcow2` destinée à Proxmox ;
+- adapter kubeadm aux particularités de NixOS ;
+- automatiser en deux passes le cluster et ses charges avec Terraform ;
+- exposer un GPU AMD, `/dev/kfd` et `/dev/dri` à des pods utilisant ROCm ;
+- comprendre les essais, les contournements et les impasses de cette combinaison.
 
 Tout passe par le `Makefile` :
 
 ```bash
 make            # liste des cibles et variables
-make status     # où en est le projet : image, state Terraform, cluster
+make status     # état local de la dernière version du projet
 ```
 
 ## Ce que ça fait
@@ -39,7 +81,10 @@ nixos-base-image/
 └── Makefile                Build, upload, déploiement, status
 ```
 
-## Démarrage
+## Reprendre ou expérimenter
+
+Les commandes ci-dessous décrivent la dernière version connue du workflow. Elles sont
+une base à adapter et à valider sur son propre matériel, pas une procédure maintenue.
 
 Prérequis : Nix avec les flakes, Terraform, kubectl, un accès SSH au nœud Proxmox, et
 un `terraform/terraform.tfvars` renseigné (voir plus bas).
@@ -72,16 +117,15 @@ Les variables et leurs valeurs par défaut sont documentées dans
 ## GPU AMD
 
 Le passthrough PCIe est activé par défaut et repose sur un *resource mapping* Proxmox
-(`Datacenter → Resource Mappings → PCI Devices`). Une carte AMD peut rester bloquée
-après un reset raté et figer OVMF avant même le boot — la VM n'a alors ni réseau ni
-agent. Deux échappatoires :
+(`Datacenter → Resource Mappings → PCI Devices`). Pour isoler un problème lié à la
+carte, la VM peut être déployée sans GPU :
 
 ```bash
-make deploy GPU=false     # déployer sans la carte
+make deploy GPU=false
 ```
 
-et `gpu_rombar = false` (le défaut), qui évite que le firmware exécute la vBIOS au
-démarrage.
+`gpu_rombar = false` est également la valeur par défaut. Ces deux options sont des
+contournements du reset bug décrit plus haut, pas une correction de fond.
 
 ## Documentation
 
