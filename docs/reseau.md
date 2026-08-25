@@ -111,7 +111,7 @@ CNI. Ports ouverts :
 | 179, 5473, UDP 4789 | Calico : BGP, Typha, VXLAN |
 | 80, 443, 8080 | Traefik |
 | 3023, 3024, 3026 | Teleport |
-| 30000, 9999 | NodePort, serveur de join-command |
+| 30000 | NodePort |
 
 Un service exposé qui ne répond pas alors que MetalLB lui a bien donné une IP mérite
 un coup d'œil à cette liste avant tout le reste : **un port applicatif nouveau doit y

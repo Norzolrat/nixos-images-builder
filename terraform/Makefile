@@ -1,8 +1,8 @@
 .PHONY: apply destroy init kube kube-del list-mod
 
 # Deux passes obligatoires :
-# 1) provision du cluster + récupération du kubeconfig frais + join command
-# 2) worker GPU (si activé) + déploiements K8s
+# 1) provision du cluster + récupération du kubeconfig frais
+# 2) déploiements K8s
 #    (le provider kubernetes lit le kubeconfig au démarrage de terraform)
 apply:
 	terraform apply -target=module.master \

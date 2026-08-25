@@ -81,10 +81,6 @@ write_files:
       # ---- Attendre que Calico soit ready ----
       kubectl rollout status daemonset/calico-node -n kube-system --timeout=10m
 
-      # ---- Générer le join-command (récupéré par Terraform via SCP) ----
-      kubeadm token create --print-join-command > /root/kubeadm-join.sh
-      chmod 644 /root/kubeadm-join.sh
-
 runcmd:
   # Régénérer le machine-id (figé dans l'image) pour que chaque VM soit unique
   - rm -f /etc/machine-id
@@ -115,7 +111,6 @@ runcmd:
 final_message: |
   =====================================================
   NixOS kubeadm master ready — boot took $UPTIME seconds
-  Join command : cat /root/kubeadm-join.sh
   Kubeconfig   : scp ${vm_hostname}:~/kubeconfig ~/.kube/config
   Bootstrap log: /root/k8s-bootstrap.log
   NixOS rebuild: /root/nixos-rebuild.log

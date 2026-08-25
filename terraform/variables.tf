@@ -72,7 +72,7 @@ variable "vm_hostname" {
 }
 
 variable "vm_id" {
-  description = "ID de base de la VM master (workers = vm_id + N)"
+  description = "ID Proxmox de la VM master"
   type        = number
   default     = 1005
 }
@@ -134,7 +134,7 @@ variable "vlan_subinterfaces" {
 }
 
 variable "vm_ip" {
-  description = "Adresse IP du master (format CIDR). Workers = IP+N"
+  description = "Adresse IP du master (format CIDR)"
   type        = string
   default     = "10.255.255.54/24"
 }

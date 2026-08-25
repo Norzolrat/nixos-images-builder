@@ -85,7 +85,7 @@
   networking.firewall = {
     enable = true;
     checkReversePath = "loose";
-    allowedTCPPorts = [ 22 6443 2379 2380 10250 10257 10259 30000 179 5473 9999
+    allowedTCPPorts = [ 22 6443 2379 2380 10250 10257 10259 30000 179 5473
       # Traefik — accessible via eth0 (cible NAT SNS) et eth1 (VLAN dmz)
       80 443 8080
       # Teleport — TCP passthrough bastion

@@ -86,10 +86,10 @@ containerd ni kubelet.
 (avec `--pod-network-cidr`, `--service-cidr=10.96.0.0/12` et l'IP du nœud en
 `--apiserver-advertise-address`), copie le kubeconfig dans `~/kubeconfig` du user
 par défaut, installe Calico — dont le manifeste est patché à la volée pour aligner le
-pod CIDR — puis attend le rollout du daemonset et génère un `kubeadm join`.
+pod CIDR — puis attend le rollout du daemonset.
 
-Le join-command est produit mais **plus consommé par personne** : il n'y a plus de
-module `worker`. Le cluster est mono-nœud.
+Le cluster est mono-nœud : il n'y a plus de module `worker`, et le bootstrap ne
+génère plus de `kubeadm join`.
 
 ## Pièges connus
 
@@ -112,10 +112,6 @@ boucle jusqu'à ce que `kubeadm init` ait écrit `/var/lib/kubelet/config.yaml` 
 **`hardware-image.nix` sert deux fois.** Il déclare les filesystems (labels `nixos`
 et `ESP`) et le bootloader, à la fois pour `make-disk-image` au build et pour que
 `nixos-rebuild` fonctionne dans la VM. Le retirer casse les deux.
-
-**Code mort.** `terraform/templates/setup-vlans.sh.tpl` n'est référencé par aucun
-`.tf` : les VLANs sont configurés en déclaratif via `machine.nix.tpl`. Ne pas s'en
-inspirer, il décrit une approche impérative abandonnée.
 
 ## Versions épinglées
 

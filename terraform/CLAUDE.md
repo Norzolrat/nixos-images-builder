@@ -58,12 +58,6 @@ lancer terraform depuis un autre répertoire casse ces chemins.
 dernier apply : `terraform output -raw master_vm_ip` échoue tant qu'un apply complet
 n'a pas eu lieu. C'est attendu, pas un bug de configuration.
 
-**Code mort.** `templates/setup-vlans.sh.tpl` n'est référencé par aucun `.tf`. Les
-VLANs sont configurés en déclaratif via `modules/master/templates/machine.nix.tpl`.
-
-**Le join-command est encore généré** par le bootstrap cloud-init, et le port 9999
-reste ouvert, alors qu'il n'y a plus de module `worker`. Le cluster est mono-nœud.
-
 ## Ajouter une variable
 
 Trois niveaux à traverser, dans cet ordre : `variables.tf` (racine) →
