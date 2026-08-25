@@ -1,21 +1,52 @@
 # nixos-base-image
 
-Repo personnel pour construire et déployer des images NixOS sur Proxmox. Ces images servent de base à l'infrastructure.
+Ce dépôt personnel a servi à construire et déployer des images NixOS sur Proxmox comme base d'une infrastructure expérimentale.
+
+> [!WARNING]
+> **Projet arrêté — dépôt non maintenu.**
+>
+> Le développement s'arrête ici et aucune évolution supplémentaire n'est prévue. Le dépôt reste volontairement en ligne comme une relique technique et un retour d'expérience. Ce n'est ni une solution clé en main, ni une configuration dont le fonctionnement est garanti sur un autre matériel.
+
+## Pourquoi le projet s'arrête
+
+L'expérience n'est pas un échec complet : les images NixOS ont été construites, le cluster kubeadm a démarré et le GPU AMD avec ROCm a réellement été utilisé depuis Kubernetes sur le matériel d'origine. La limite durable se trouve dans la fiabilité du cycle de vie du passthrough PCIe AMD, en particulier dans la réinitialisation de la carte entre deux utilisations.
+
+Après un reset raté, le GPU peut rester bloqué et figer OVMF avant même le démarrage de NixOS. La VM n'a alors ni réseau ni agent QEMU, et les automatisations finissent par expirer en attendant une machine qui ne démarrera pas. Un redémarrage de l'hôte Proxmox est généralement nécessaire pour récupérer la carte. Les derniers changements ont amélioré plusieurs aspects du provisionnement NixOS, du réseau et du déploiement, mais n'ont pas rendu ce passthrough suffisamment reproductible pour poursuivre vers une infrastructure stable.
+
+Le projet s'arrête donc sur un prototype qui a fonctionné, mais dont la dépendance au comportement matériel et firmware du GPU empêche de promettre un usage fiable ou maintenable.
+
+## Pourquoi conserver ce dépôt
+
+Ce dépôt restera en ligne comme une relique technique. Il peut encore servir de point de départ à celles et ceux qui veulent expérimenter un GPU AMD avec ROCm dans Kubernetes sur NixOS, derrière Proxmox. Il documente autant ce qui a fonctionné que les essais et les limites rencontrées ; il ne constitue pas une recette universelle ni une promesse de compatibilité avec un autre GPU ou une autre plateforme.
+
+Il contient notamment des exemples pour :
+
+- produire plusieurs variantes d'images NixOS `qcow2` destinées à Proxmox ;
+- déployer avec Terraform un cluster kubeadm composé d'un master et de workers, ou une variante mono-nœud ;
+- attacher un GPU AMD à une VM dédiée ou à un worker Kubernetes ;
+- déployer le device plugin AMD et exposer `/dev/kfd` et `/dev/dri` à des pods ;
+- tester ROCm avec PyTorch et expérimenter des charges comme Ollama ou ComfyUI.
+
+Les sections suivantes décrivent le dernier état historique de la branche. Les commandes et configurations sont conservées comme matériau d'expérimentation : elles doivent être relues, adaptées et validées sur son propre environnement.
 
 ## Vue d'ensemble
 
 ```
 nixos-base-image/
 ├── nix/                  # Définitions des images NixOS (flake)
-│   ├── flake.nix         # Point d'entrée — deux packages qcow2
-│   ├── configuration.nix # Image de base (commune aux deux)
-│   └── k8s.nix           # Surcouche Kubernetes
-├── tf-kube/              # Terraform — déploiement automatique d'un cluster K8s
-│   ├── main.tf
-│   ├── variables.tf
+│   ├── flake.nix         # Point d'entrée — quatre packages qcow2
+│   ├── configuration.nix # Image de base commune
+│   ├── k8s.nix           # Surcouche Kubernetes
+│   └── gpu-amd.nix       # Surcouche AMD ROCm
+├── tf-base/              # Terraform — VM NixOS générique
+├── tf-amd_card/          # Terraform — VM dédiée avec passthrough AMD
+├── tf-kube/              # Terraform — cluster kubeadm master + workers
 │   └── modules/
 │       ├── master/       # Nœud control-plane (kubeadm init + Calico)
-│       └── worker/       # Nœuds workers (kubeadm join)
+│       ├── worker/       # Workers CPU (kubeadm join)
+│       └── worker-gpu-amd/ # Workers avec passthrough AMD
+├── tf-mono/              # Terraform — variante kubeadm mono-nœud et ses charges
+├── tf-deploy/            # Terraform — charges Kubernetes historiques
 └── Makefile              # Commandes build / upload / préparation template
 ```
 
@@ -32,7 +63,7 @@ Image minimaliste à usage générique. Elle inclut :
 - Packages de base : `vim`, `git`, `curl`, `wget`, `htop`, `busybox`
 - Nix flakes activé
 
-### nixos-kube
+### nixos-k8s
 
 Étend `nixos-base` avec tout ce qu'il faut pour faire tourner un nœud Kubernetes :
 
@@ -44,20 +75,28 @@ Image minimaliste à usage générique. Elle inclut :
 - `kubelet` en unité systemd compatible kubeadm (NixOS read-only oblige)
 - Ports firewall ouverts pour le control-plane, kubelet, BGP et VXLAN
 
-## Workflow — construire et uploader une image
+### Variantes GPU AMD
+
+Le flake expose également `nixos-gpu-amd` et `nixos-k8s-gpu-amd`. Elles ajoutent la configuration `amdgpu`, les outils ROCm et les permissions nécessaires à `/dev/kfd` et aux périphériques de rendu. La seconde combine cette surcouche avec Kubernetes.
+
+## Workflow historique — construire et uploader une image
 
 ### 1. Builder
 
 ```bash
-make build-base   # → export/nixos-base.qcow2
-make build-kube   # → export/nixos-kube.qcow2
+make build-base           # → export/nixos-base.qcow2
+make build-kube           # → export/nixos-k8s.qcow2
+make build-gpu-amd        # → export/nixos-gpu-amd.qcow2
+make build-k8s-gpu-amd    # → export/nixos-k8s-gpu-amd.qcow2
 ```
 
 ### 2. Uploader vers Proxmox
 
 ```bash
-make upload-base  # build + scp vers /var/lib/vz/images/ sur le nœud Proxmox
+make upload-base          # build + scp vers le nœud Proxmox
 make upload-kube
+make upload-gpu-amd
+make upload-k8s-gpu-amd
 ```
 
 Variables disponibles :
@@ -85,9 +124,9 @@ La VM peut ensuite être convertie en template via l'interface Proxmox.
 
 ## Déploiement Kubernetes — tf-kube
 
-Terraform déploie un cluster kubeadm complet (1 master + N workers) sur Proxmox en partant du template `nixos-kube`.
+Terraform déploie un cluster kubeadm complet (1 master + N workers CPU ou GPU AMD) sur Proxmox à partir d'une image Kubernetes adaptée.
 
-**Prérequis :** l'image `nixos-kube.qcow2` doit être uploadée sur Proxmox et le template créé au préalable.
+**Prérequis :** l'image `nixos-k8s.qcow2`, et `nixos-k8s-gpu-amd.qcow2` si des workers GPU sont demandés, doivent être uploadées sur Proxmox au préalable.
 
 ### Configuration
 
@@ -99,7 +138,7 @@ proxmox_user       = "terraform@pve"
 proxmox_token_name = "terraform"
 proxmox_token      = "<token>"
 
-nixos_image_file_id = "local:iso/nixos-kube.qcow2"
+nixos_image_file_id = "local:iso/nixos-k8s.qcow2"
 
 vm_ip          = "192.168.99.186/24"  # master — workers = IP+1, IP+2, ...
 vm_gateway     = "192.168.99.254"
@@ -120,17 +159,18 @@ terraform apply
 
 ### Ce que Terraform fait
 
-1. Crée la VM master depuis le template, lui injecte un cloud-init qui :
+1. Crée la VM master, lui injecte un cloud-init qui :
    - Lance `kubeadm init` avec le CIDR configuré
    - Installe Calico comme CNI
-   - Génère le `kubeadm join` command et l'expose via un mini serveur HTTP (port 9999, TTL 1h)
    - Copie le kubeconfig dans `~/kubeconfig`
-2. Crée N VMs worker, chacune récupère le join-command depuis le master (retry toutes les 15s pendant 10 min) et rejoint le cluster
+2. Récupère ce kubeconfig et génère par SSH un script `kubeadm join` temporaire.
+3. Crée les VMs workers CPU et, si demandé, les workers GPU AMD avec leur resource mapping PCI.
+4. Copie et exécute le script de jonction sur chaque worker, puis applique le label `gpu=amd` aux nœuds GPU prêts.
 
 ### Récupérer le kubeconfig
 
 ```bash
-scp user@<master-ip>:~/kubeconfig ~/.kube/config
+cp ../export/kubeconfig ~/.kube/config
 ```
 
 ## Détails techniques

@@ -1,0 +1,8 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://ia.sa-info.fr",
+    "ANTHROPIC_AUTH_TOKEN": "sk-31f7e42c4b24f0ac-6e1298-81904bd1",
+    "ANTHROPIC_MODEL": "game-dev",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"
+  }
+}
